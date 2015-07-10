@@ -29,4 +29,17 @@ describe('ViewDB', function() {
 		var q = new Kuery({"address.street":"Bellmansgatan"});
 		q.find(collection).length.should.equal(1);
 	});		
+	it('should return correct elements for property with path eq query', function() {
+		var q = new Kuery({name:{$in:["Andreas","Emil"]}});
+		q.find(collection).length.should.equal(2);
+	});		
+	it('should return correct elements for property in with strings query', function() {
+		var q = new Kuery({name:{$in:["Andreas","Emil"]}});
+		q.find(collection).length.should.equal(2);
+	});	
+	it('should return correct elements for composite query', function() {
+		var q = new Kuery({name:{$in:["Andreas","Emil"]}, id:1});
+		q.find(collection).length.should.equal(1);
+	});	
+
 });

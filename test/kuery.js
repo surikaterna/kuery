@@ -41,5 +41,16 @@ describe('ViewDB', function() {
 		var q = new Kuery({name:{$in:["Andreas","Emil"]}, id:1});
 		q.find(collection).length.should.equal(1);
 	});	
-
+	it('should return correct elements for regex string query', function() {
+		var q = new Kuery({name:{$regex:"Andr.*", $options:"i"}});
+		q.find(collection).length.should.equal(1);
+	});	
+	it('should return correct elements for regex native query', function() {
+		var q = new Kuery({name:{$regex:/andr.*/, $options:"i"}});
+		q.find(collection).length.should.equal(1);
+	});	
+	it('should return correct elements for inline regex query', function() {
+		var q = new Kuery({name:/andr.*/i});
+		q.find(collection).length.should.equal(1);
+	});	
 });

@@ -53,4 +53,22 @@ describe('ViewDB', function() {
 		var q = new Kuery({name:/andr.*/i});
 		q.find(collection).length.should.equal(1);
 	});	
+	it('should return correct elements for $or query', function() {
+		var q = new Kuery({
+				$or:[
+					{name:/andr.*/i}
+					,{name:/emil.*/i}
+				]
+			});
+		q.find(collection).length.should.equal(2);
+	});	
+	it('should return correct elements for $or query when both sides return same element', function() {
+		var q = new Kuery({
+				$or:[
+					{name:/andr.*/i}
+					,{name:/andr.*/i}
+				]
+			});
+		q.find(collection).length.should.equal(1);
+	});		
 });

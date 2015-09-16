@@ -1,14 +1,16 @@
+var _ = require('lodash');
 var Kuery = require('..');
 var should = require('should');
+
 
 var collection =  [
 	{id:1, name:'Andreas',address:{street:'Bellmansgatan'}},
 	{id:2, name:'Sven'},
 	{id:3, name:'Christian'},
-	{id:4, name:'Emil'},
+	{id:4, name:'Emil', girlfriends: [{name:'fanny', hotness:10}, {name:'eve', hotness:1000}]},
 ];
 
-describe('ViewDB', function() {
+describe('Kuery', function() {
 	it('should return 0 for empty collection', function() {
 		var q = new Kuery({});
 		q.find([]).length.should.equal(0);
@@ -69,6 +71,10 @@ describe('ViewDB', function() {
 					,{name:/andr.*/i}
 				]
 			});
+		q.find(collection).length.should.equal(1);
+	});	
+	it('should return correct elements for property with path eq query with arrays', function() {
+		var q = new Kuery({"girlfriends.name":"eve"});
 		q.find(collection).length.should.equal(1);
 	});		
 });

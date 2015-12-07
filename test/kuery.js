@@ -24,7 +24,7 @@ describe('Kuery', function() {
 		q.findOne(collection).name.should.equal('Sven');
 	});
 
-	it.only('should return correct element for property not eq query', function() {
+	it('should return correct element for property not eq query', function() {
 		var q = new Kuery({id:{$ne:2}});
 		q.find(collection).length.should.equal(3);
 	});
@@ -37,7 +37,11 @@ describe('Kuery', function() {
 		var q = new Kuery({"address.street":"Bellmansgatan"});
 		q.find(collection).length.should.equal(1);
 	});
-	it('should return correct elements for property with path eq query', function() {
+	it('should return correct elements for property with path ne query', function() {
+		var q = new Kuery({"address.street": {$ne:"Bellmansgatan"}});
+		q.find(collection).length.should.equal(3);
+	});
+	it('should return correct elements for property with path in query', function() {
 		var q = new Kuery({name:{$in:["Andreas","Emil"]}});
 		q.find(collection).length.should.equal(2);
 	});

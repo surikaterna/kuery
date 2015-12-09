@@ -4,10 +4,10 @@ var should = require('should');
 
 
 var collection =  [
-	{id:1, name:'Andreas',address:{street:'Bellmansgatan'}},
-	{id:2, name:'Sven'},
-	{id:3, name:'Christian'},
-	{id:4, name:'Emil', girlfriends: [{name:'fanny', hotness:10}, {name:'eve', hotness:1000}]},
+	{id:1, name:'Andreas',address:{street:'Bellmansgatan'}, born: new Date('1980-01-01T12:00:00.000Z')},
+	{id:2, name:'Sven', born: new Date('1989-01-01T12:00:00.000Z')},
+	{id:3, name:'Christian', born: new Date('1990-01-01T12:00:00.000Z')},
+	{id:4, name:'Emil', girlfriends: [{name:'fanny', hotness:10}, {name:'eve', hotness:1000}], born: new Date('1982-01-01T12:00:00.000Z')},
 ];
 
 describe('Kuery', function() {
@@ -87,4 +87,32 @@ describe('Kuery', function() {
 		var q = new Kuery({"girlfriends.name":"eve"});
 		q.find(collection).length.should.equal(1);
 	});
+	it('should return correct element for property gte query', function() {
+		var q = new Kuery({id:{$gte:2}});
+		q.find(collection).length.should.equal(3);
+	});	
+	it('should return correct element for property lte query', function() {
+		var q = new Kuery({id:{$lte:2}});
+		q.find(collection).length.should.equal(2);
+	});	
+	it('should return correct element for property gt query', function() {
+		var q = new Kuery({id:{$gt:2}});
+		q.find(collection).length.should.equal(2);
+	});	
+	it('should return correct element for property lt query', function() {
+		var q = new Kuery({id:{$lt:2}});
+		q.find(collection).length.should.equal(1);
+	});	
+	it('should return correct element for property lte date query', function() {
+		var q = new Kuery({born:{$lte:new Date('1981-01-01')}});
+		q.find(collection).length.should.equal(1);
+	});	
+	it('should return correct element for property gte date query', function() {
+		var q = new Kuery({born:{$gte:new Date('1981-01-01')}});
+		q.find(collection).length.should.equal(3);
+	});	
+	it('should return correct element for property gte/lte date query', function() {
+		var q = new Kuery({born:{$gte:new Date('1981-01-01'), $lte:new Date('1990-01-01')}});
+		q.find(collection).length.should.equal(2);
+	});	
 });

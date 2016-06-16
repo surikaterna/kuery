@@ -14,7 +14,7 @@
     "type": "git",
     "url": "git+https://github.com/surikaterna/kuery.git"
   },
-  "author": "Andreas Karlsson",
+  "author": "Surikat AB",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/surikaterna/kuery/issues"

@@ -1,4 +1,4 @@
-var _ = require('lodash');
+var _ = require('lodash/fp');
 var Kuery = require('..');
 var should = require('should');
 
@@ -28,7 +28,6 @@ describe('Kuery', function() {
 		var q = new Kuery({id:{$ne:2}});
 		q.find(collection).length.should.equal(3);
 	});
-
 	it('should return correct elements for property in query', function() {
 		var q = new Kuery({id:{$in:[1,2]}});
 		q.find(collection).length.should.equal(2);
@@ -115,4 +114,14 @@ describe('Kuery', function() {
 		var q = new Kuery({born:{$gte:new Date('1981-01-01'), $lte:new Date('1990-01-01')}});
 		q.find(collection).length.should.equal(2);
 	});	
+/*	it('should return correct element for elemmatch query', function() {
+		var q = new Kuery({born:{$gte:new Date('1981-01-01'), $lte:new Date('1990-01-01')}});
+		q.find(collection).length.should.equal(2);
+	});
+*/
+	it('should return correct elements for property with path $regexp with arrays', function() {
+		var q = new Kuery({"girlfriends.name":{$regex:"ev.*", $options:"i"}});
+		q.find(collection).length.should.equal(1);
+	});
+		
 });

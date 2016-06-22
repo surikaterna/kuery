@@ -76,8 +76,8 @@ describe('Kuery', function () {
   it('should return correct elements for $or query when both sides return same element', function () {
     var q = new Kuery({
       $or: [
+        { name: /andr.*/i },
         { name: /andr.*/i }
-        , { name: /andr.*/i }
       ]
     });
     q.find(collection).length.should.equal(1);
@@ -129,7 +129,7 @@ describe('Kuery', function () {
   it('should return no element for multipart elemMatch query matching different array elements', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10, name: 'eve' } } });
     q.find(collection).length.should.equal(0);
-  });  
+  });
   it('should return correct elements for property with path $regexp with arrays', function () {
     var q = new Kuery({ 'girlfriends.name': { $regex: 'ev.*', $options: 'i' } });
     q.find(collection).length.should.equal(1);

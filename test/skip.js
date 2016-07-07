@@ -15,11 +15,6 @@ var collection = [
       { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z')
   }
 ];
-var coll2 = [];
-for (var i = 0; i < 10000; i++) {
-  coll2[i] = { id: i, age: { years: i } };
-}
-
 
 describe('Kuery', function () {
   describe('#skip', function () {

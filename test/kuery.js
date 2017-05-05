@@ -18,7 +18,7 @@ describe('Kuery', function () {
   });
   it('should return all elements for empty query', function () {
     var q = new Kuery({});
-    q.find(collection).length.should.equal(4);
+    q.find(collection).length.should.equal(5);
   });
   it('should return correct element for property eq query', function () {
     var q = new Kuery({ id: 2 });
@@ -27,7 +27,7 @@ describe('Kuery', function () {
 
   it('should return correct element for property not eq query', function () {
     var q = new Kuery({ id: { $ne: 2 } });
-    q.find(collection).length.should.equal(3);
+    q.find(collection).length.should.equal(4);
   });
   it('should return correct elements for property in query', function () {
     var q = new Kuery({ id: { $in: [1, 2] } });
@@ -39,7 +39,7 @@ describe('Kuery', function () {
   });
   it('should return correct elements for property with path ne query', function () {
     var q = new Kuery({ 'address.street': { $ne: 'Bellmansgatan' } });
-    q.find(collection).length.should.equal(3);
+    q.find(collection).length.should.equal(4);
   });
   it('should return correct elements for property with path in query', function () {
     var q = new Kuery({ name: { $in: ['Andreas', 'Emil'] } });
@@ -83,18 +83,19 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
-  it.only('$or should do implicit and on subqueries', function () {
+  it('$or on main query and $and should work on subqueries', function () {
     var q = new Kuery({
       $or: [
         {
-          'girlfriends.name': 'Hanna',
-          'girlfriends.hotness': 10
+          $and: [{
+            'girlfriends.name': 'Hanna',
+            'girlfriends.hotness': 10
+          }]
         },
         { 'girlfriends.hotness': 1000 }
       ]
     });
-    q.find(collection).length.should.equal(1);
-    console.log(q.find(collection))
+    q.find(collection).length.should.equal(1); // emil, not PG
   })
 
   it('should return correct elements for property with path eq query with arrays', function () {
@@ -103,7 +104,7 @@ describe('Kuery', function () {
   });
   it('should return correct element for property gte query', function () {
     var q = new Kuery({ id: { $gte: 2 } });
-    q.find(collection).length.should.equal(3);
+    q.find(collection).length.should.equal(4);
   });
   it('should return correct element for property lte query', function () {
     var q = new Kuery({ id: { $lte: 2 } });
@@ -111,7 +112,7 @@ describe('Kuery', function () {
   });
   it('should return correct element for property gt query', function () {
     var q = new Kuery({ id: { $gt: 2 } });
-    q.find(collection).length.should.equal(2);
+    q.find(collection).length.should.equal(3);
   });
   it('should return correct element for property lt query', function () {
     var q = new Kuery({ id: { $lt: 2 } });
@@ -123,11 +124,11 @@ describe('Kuery', function () {
   });
   it('should return correct element for property gte date query', function () {
     var q = new Kuery({ born: { $gte: new Date('1981-01-01') } });
-    q.find(collection).length.should.equal(3);
+    q.find(collection).length.should.equal(4);
   });
   it('should return correct element for property gte/lte date query', function () {
     var q = new Kuery({ born: { $gte: new Date('1981-01-01'), $lte: new Date('1990-01-01') } });
-    q.find(collection).length.should.equal(2);
+    q.find(collection).length.should.equal(3);
   });
   it('should return no elemenst for single elemMatch query with no match', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 222 } } });

@@ -88,7 +88,9 @@ describe('Kuery', function () {
       $or: [
         {
           $and: [{
-            'girlfriends.name': 'Hanna',
+            'girlfriends.name': 'Hanna'
+          },
+          {
             'girlfriends.hotness': 10
           }]
         },

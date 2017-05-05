@@ -5,9 +5,10 @@ var should = require('should');
 
 var collection = [
   { id: 1, name: 'Andreas', address: { street: 'Bellmansgatan' }, born: new Date('1980-01-01T12:00:00.000Z'), isActive: true },
-  { id: 2, name: 'Sven', address: {}, girlfriends: [{ wife: {}} ], born: new Date('1989-01-01T12:00:00.000Z'), isActive: true },
+  { id: 2, name: 'Sven', address: {}, girlfriends: [{ wife: {} }], born: new Date('1989-01-01T12:00:00.000Z'), isActive: true },
   { id: 3, name: 'Christian', born: new Date('1990-01-01T12:00:00.000Z'), girlfriends: { wife: {} }, isActive: false },
-  { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z') }
+  { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z') },
+  { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') }
 ];
 
 describe('Kuery', function () {
@@ -82,6 +83,20 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
+  it.only('$or should do implicit and on subqueries', function () {
+    var q = new Kuery({
+      $or: [
+        {
+          'girlfriends.name': 'Hanna',
+          'girlfriends.hotness': 10
+        },
+        { 'girlfriends.hotness': 100 }
+      ]
+    });
+    q.find(collection).length.should.equal(1);
+    console.log(q.find(collection))
+  })
+
   it('should return correct elements for property with path eq query with arrays', function () {
     var q = new Kuery({ 'girlfriends.name': 'eve' });
     q.find(collection).length.should.equal(1);

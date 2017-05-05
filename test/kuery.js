@@ -83,20 +83,6 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
-  it.only('$or should do implicit and on subqueries', function () {
-    var q = new Kuery({
-      $or: [
-        {
-          'girlfriends.name': 'Hanna',
-          'girlfriends.hotness': 10
-        },
-        { 'girlfriends.hotness': 100 }
-      ]
-    });
-    q.find(collection).length.should.equal(1);
-    console.log(q.find(collection))
-  })
-
   it('should return correct elements for property with path eq query with arrays', function () {
     var q = new Kuery({ 'girlfriends.name': 'eve' });
     q.find(collection).length.should.equal(1);
@@ -164,6 +150,19 @@ describe('Kuery', function () {
   it('should return elements when query for boolean', function () {
     var q = new Kuery({ isActive: true });
     q.find(collection).length.should.equal(2);
+  });
+  it('$or should do implicit and on subqueries', function () {
+    var q = new Kuery({
+      $or: [
+        {
+          'girlfriends.name': 'Hanna',
+          'girlfriends.hotness': 10
+        },
+        { 'girlfriends.hotness': 1000 }
+      ]
+    });
+    q.find(collection).length.should.equal(1);
+    console.log(q.find(collection));
   });
 
 });

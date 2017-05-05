@@ -90,7 +90,7 @@ describe('Kuery', function () {
           'girlfriends.name': 'Hanna',
           'girlfriends.hotness': 10
         },
-        { 'girlfriends.hotness': 100 }
+        { 'girlfriends.hotness': 1000 }
       ]
     });
     q.find(collection).length.should.equal(1);

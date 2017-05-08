@@ -61,4 +61,23 @@ describe('Kuery', function () {
       r[0].id.should.equal(3);
     });
   });
+  describe('#sort', function () {
+    it('should sort on one property', function () {
+      var r;
+      var q = new Kuery({});
+      q.sort({born: 1});
+      r = q.find(collection);
+      r.length.should.equal(collection.length);
+      r[0].born.should.equal(collection[0].born);
+      r[1].born.should.equal(collection[3].born);
+    });
+    it('should sort ands skip', function () {
+      var r;
+      var q = new Kuery({});
+      q.sort({born: -1});
+      q.skip(1);
+      r = q.find(collection);
+      r[0].name.should.equal('Sven');
+    });
+  });
 });

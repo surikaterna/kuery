@@ -165,7 +165,13 @@ describe('Kuery', function () {
     q.find(collection).length.should.equal(1);
   });
 
-  it.only('test', function () {
+  it.only('test with $in in deep property', function () {
+    var q1 = new Kuery({
+      'girlfriends.name': { $in: ['Hanna', 'eve'] }
+    });
+    q1.find(collection).length.should.equal(2);
+    console.log("OK!");
+
     const observation = {
       "id": "95256628-62ec-4336-9219-90cf3e2b66bf",
       "reports": [{
@@ -179,13 +185,13 @@ describe('Kuery', function () {
       }],
     }
 
-    var q = new Kuery(
+    var q2 = new Kuery(
       {
         'reports.deviation': { $in: ['deviation', 'fault'] }
       }
     );
 
-    q.find(observation).length.should.equal(1);
+    q2.find([observation]).length.should.equal(1);
   });
 
 });

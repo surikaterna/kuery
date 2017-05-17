@@ -165,4 +165,27 @@ describe('Kuery', function () {
     q.find(collection).length.should.equal(1);
   });
 
+  it.only('test', function () {
+    const observation = {
+      "id": "95256628-62ec-4336-9219-90cf3e2b66bf",
+      "reports": [{
+        "handle": "hazardous",
+        "checkDate": "2017-05-17T07:42:24.329Z",
+        "remark": "test fault",
+        "type": "deviationCheck",
+        "hasDeviation": true,
+        "deviation": "fault",
+        "title": "Hazardous"
+      }],
+    }
+
+    var q = new Kuery(
+      {
+        'reports.deviation': { $in: ['deviation', 'fault'] }
+      }
+    );
+
+    q.find(observation).length.should.equal(1);
+  });
+
 });

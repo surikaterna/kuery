@@ -33,6 +33,10 @@ describe('Kuery', function () {
     var q = new Kuery({ id: { $in: [1, 2] } });
     q.find(collection).length.should.equal(2);
   });
+  it('should return correct elements for property in $nin query', function () {
+    var q = new Kuery({ id: { $nin: [1, 2] } });
+    q.find(collection).length.should.equal(3);
+  });
   it('should return correct elements for property with path eq query', function () {
     var q = new Kuery({ 'address.street': 'Bellmansgatan' });
     q.find(collection).length.should.equal(1);
@@ -49,9 +53,21 @@ describe('Kuery', function () {
     var q = new Kuery({ name: { $in: ['Andreas', 'Emil'] } });
     q.find(collection).length.should.equal(2);
   });
+  it('should return correct elements for property in with strings query', function () {
+    var q = new Kuery({ name: { $nin: ['Andreas', 'Emil'] } });
+    q.find(collection).length.should.equal(3);
+  });
   it('should return correct elements for composite query', function () {
     var q = new Kuery({ name: { $in: ['Andreas', 'Emil'] }, id: 1 });
     q.find(collection).length.should.equal(1);
+  });
+  it('should return correct elements for composite query', function () {
+    var q = new Kuery({ name: { $nin: ['Andreas', 'Emil'] }, id: 2 });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct elements for composite query', function () {
+    var q = new Kuery({ name: { $nin: ['Andreas', 'Emil'] }, id: 1 });
+    q.find(collection).length.should.equal(0);
   });
   it('should return correct elements for regex string query', function () {
     var q = new Kuery({ name: { $regex: 'Andr.*', $options: 'i' } });

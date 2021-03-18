@@ -25,6 +25,11 @@ describe('Kuery', function () {
     q.findOne(collection).name.should.equal('Sven');
   });
 
+  it('should return correct element for property $eq query', function () {
+    var q = new Kuery({ name: { $eq: 'Emil' } });
+    q.findOne(collection).name.should.equal('Emil');
+  });
+
   it('should return correct element for property not eq query', function () {
     var q = new Kuery({ id: { $ne: 2 } });
     q.find(collection).length.should.equal(4);
@@ -143,6 +148,12 @@ describe('Kuery', function () {
   it('should return correct element for multipart elemMatch query', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10, name: 'fanny' } } });
     q.find(collection).length.should.equal(1);
+  });
+  it('should return correct element for multipart elemMatch query asserting with $eq and $ne', function () {
+    var q = new Kuery({ girlfriends: { $elemMatch: { hotness: { $eq: 10 }, name: { $ne: 'eve' } } } });
+    const col = q.find(collection);
+    col.length.should.equal(1);
+    col[0].name.should.equal('Emil');
   });
   it('should return no element for multipart elemMatch query matching different array elements', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10, name: 'eve' } } });

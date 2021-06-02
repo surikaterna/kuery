@@ -2,7 +2,7 @@ var should = require('should');
 
 var QueryCompiler = require('../lib/compiler');
 describe('QueryCompiler', function () {
-  describe.only('compile', function () {
+  describe('compile', function () {
     it('compile ne null query', function () {
       var query = {
         attachmentId: { $ne: null }

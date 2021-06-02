@@ -1,5 +1,18 @@
-var QueryCompiler = require('../lib/compiler'); 
+var should = require('should');
+
+var QueryCompiler = require('../lib/compiler');
 describe('QueryCompiler', function () {
+  describe.only('compile', function () {
+    it('compile ne null query', function () {
+      var query = {
+        attachmentId: { $ne: null }
+      };
+      var compiler = new QueryCompiler();
+      should.doesNotThrow(function () {
+        compiler.compile(query);
+      });
+    });
+  });
   describe('_compilePredicates', function () {
     it('compile eq query', function () {
       var compiler = new QueryCompiler();

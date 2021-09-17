@@ -8,7 +8,8 @@ var collection = [
   { id: 2, name: 'Sven', address: {}, girlfriends: [{ wife: {} }], born: new Date('1989-01-01T12:00:00.000Z'), isActive: true },
   { id: 3, name: 'Christian', born: new Date('1990-01-01T12:00:00.000Z'), girlfriends: { wife: {} }, isActive: false },
   { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z') },
-  { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') }
+  { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') },
+  //{ id: 6, name: 'Nando', address: { street: 'Bellmansgatan' }, born: new Date('1983-09-13T12:00:00.000Z'), isActive: true },
 ];
 
 describe('Kuery', function () {
@@ -191,5 +192,35 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
+
+  it('should return same with and without $and operator', function () {
+    // both should return people born from 1980-01-01 to 1982-01-02
+    var q1 = new Kuery({
+      'born': {
+        $gte: new Date('1980-01-01'),
+        $lte: new Date('1982-01-02')
+      }
+    });
+    var q2 = new Kuery({
+      'born': {
+        $and: [
+          { $gte: new Date('1980-01-01') },
+          { $lte: new Date('1982-01-02') }
+        ]
+      }
+    });
+    // var q2 = new Kuery();
+    // q2['born'] = {
+    //   $and: [
+    //     { $gte: new Date('1980-01-01') },
+    //     { $lte: new Date('1982-01-02') }
+    //   ]
+    // };
+
+    console.log('**** q1', q1.find(collection));
+    console.log('**** q2', q2.find(collection));
+    //q1.find(collection).length.should.equal(5);
+  });
+
 
 });

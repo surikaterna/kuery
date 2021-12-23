@@ -46,6 +46,10 @@ describe('Kuery', function () {
     var q = new Kuery({ id: { $nin: [1, 2] } });
     q.find(collection).length.should.equal(3);
   });
+  it('should return all elements for property with empty $nin query', function () {
+    var q = new Kuery({ id: { $nin: [] } });
+    q.find(collection).length.should.equal(5);
+  });
   it('should return correct elements for property with path eq query', function () {
     var q = new Kuery({ 'address.street': 'Bellmansgatan' });
     q.find(collection).length.should.equal(1);

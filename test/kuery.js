@@ -11,6 +11,10 @@ var collection = [
   { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') }
 ];
 
+var collectionWithNull = [
+  { id: 6, name: 'KE', girlfriends: null }
+];
+
 describe('Kuery', function () {
   it('should return 0 for empty collection', function () {
     var q = new Kuery({});
@@ -73,6 +77,34 @@ describe('Kuery', function () {
   it('should return correct elements for composite query', function () {
     var q = new Kuery({ name: { $nin: ['Andreas', 'Emil'] }, id: 1 });
     q.find(collection).length.should.equal(0);
+  });
+  it('should match when object is null and nested property is checked with $nin', function () {
+    var q = new Kuery({
+      name: 'KE',
+      'girlfriends.wife': { $nin: ['Shin Hye-sun'] }
+    });
+    q.find(collectionWithNull).length.should.equal(1);
+  });
+  it('should match when object is null and nested property is checked with $ne', function () {
+    var q = new Kuery({
+      name: 'KE',
+      'girlfriends.wife': { $ne: 'value' }
+    });
+    q.find(collectionWithNull).length.should.equal(1);
+  });
+  it('should not match when object is null and nested property is checked with $in', function () {
+    var q = new Kuery({
+      name: 'KE',
+      'girlfriends.wife': { $in: ['value'] }
+    });
+    q.find(collectionWithNull).length.should.equal(0);
+  });
+  it('should not match when object is null and nested property is checked with $eq', function () {
+    var q = new Kuery({
+      name: 'KE',
+      'girlfriends.wife': { $eq: 'value' }
+    });
+    q.find(collectionWithNull).length.should.equal(0);
   });
   it('should return correct elements for regex string query', function () {
     var q = new Kuery({ name: { $regex: 'Andr.*', $options: 'i' } });

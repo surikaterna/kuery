@@ -88,21 +88,21 @@ describe('Kuery', function () {
   it('should match when object is null and nested property is checked with $ne', function () {
     var q = new Kuery({
       name: 'KE',
-      'girlfriends.wife': { $ne: 'value' }
+      'girlfriends.wife': { $ne: 'Shin Hye-sun' }
     });
     q.find(collectionWithNull).length.should.equal(1);
   });
   it('should not match when object is null and nested property is checked with $in', function () {
     var q = new Kuery({
       name: 'KE',
-      'girlfriends.wife': { $in: ['value'] }
+      'girlfriends.wife': { $in: ['Shin Hye-sun'] }
     });
     q.find(collectionWithNull).length.should.equal(0);
   });
   it('should not match when object is null and nested property is checked with $eq', function () {
     var q = new Kuery({
       name: 'KE',
-      'girlfriends.wife': { $eq: 'value' }
+      'girlfriends.wife': { $eq: 'Shin Hye-sun' }
     });
     q.find(collectionWithNull).length.should.equal(0);
   });

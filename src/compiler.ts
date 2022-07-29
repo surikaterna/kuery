@@ -31,7 +31,7 @@ export default class QueryCompiler {
     return filters;
   }
 
-  private getType(val: any) {
+  private getType(val: string) {
     let type = Object.prototype.toString.call(val).substr(8);
     return type.substr(0, type.length - 1);
   }
@@ -121,7 +121,7 @@ export default class QueryCompiler {
     return filter;
   }
 
-  _subQuery(queries: any): any[] {
+  _subQuery<T extends Query[]>(queries: T): Array<(t: Query) => boolean> {
     let res = map(this._compilePredicates.bind(this))(queries);
     // should check if there are bad side effects...
     for (let i = 0; i < res.length; i++) {

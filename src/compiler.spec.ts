@@ -12,10 +12,6 @@ describe('QueryCompiler', function () {
       expect(() => {
         compiler.compile(query);
       }).not.toThrowError();
-
-      // should.doesNotThrow(function () {
-      //   compiler.compile(query);
-      // });
     });
   });
   describe('_compilePredicates', function () {
@@ -23,7 +19,6 @@ describe('QueryCompiler', function () {
       const compiler = new QueryCompiler();
       const p = compiler._compilePredicates({ age: 10 });
       expect(p[0]({ age: 10 })).toBe(true);
-      // p[0]({age:10}).should.be.true;
     });
   });
   describe('_subQuery', function () {
@@ -31,7 +26,6 @@ describe('QueryCompiler', function () {
       const compiler = new QueryCompiler();
       const p = compiler._subQuery([{ age: 10 }]);
       expect(p[0]({ age: 10 })).toBe(true);
-      // p[0]({age:10}).should.be.true;
     });
   });
 });

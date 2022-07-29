@@ -1,1 +1,2 @@
-module.exports = require('./kuery');
+import Kuery from "./kuery";
+export default Kuery;

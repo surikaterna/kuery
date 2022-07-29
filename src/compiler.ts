@@ -1,6 +1,6 @@
-import _ from "lodash/fp";
-import hi from "./hidash";
-import { Query } from "./types";
+import _ from 'lodash/fp';
+import hi from './hidash';
+import { Query } from './types';
 
 export default class QueryCompiler {
   compile(query: Query) {
@@ -15,9 +15,9 @@ export default class QueryCompiler {
       filtered = _.flow(filtered);
     }
     return filtered;
-  };
-  
-  _compilePredicates (query: Query): any {
+  }
+
+  _compilePredicates(query: Query): any {
     let self = this;
     let keys = _.keys(query);
     let filters: any[] = [];
@@ -29,13 +29,13 @@ export default class QueryCompiler {
       filters = filters.concat(self.compilePart(key, query[key]));
     })(keys);
     return filters;
-  };
-  
+  }
+
   private getType(val: any) {
     let type = Object.prototype.toString.call(val).substr(8);
     return type.substr(0, type.length - 1);
   }
-  
+
   private compilePart(key: keyof Query, queryPart: Query[keyof Query]): any {
     let op;
     let queryPartType = null;
@@ -44,8 +44,7 @@ export default class QueryCompiler {
     let filters = [];
     switch (type) {
       case 'Object':
-        loop:
-        for (queryPartType in queryPart) {
+        loop: for (queryPartType in queryPart) {
           op = queryPart[queryPartType];
           switch (queryPartType) {
             case '$eq':
@@ -61,9 +60,7 @@ export default class QueryCompiler {
               filters.push(_.negate(hi.compare(key, _.includes, op)));
               break;
             case '$regex':
-              filters.push(
-                this.regexp(this.extractRegexp(op, queryPart['$options']), key)
-              );
+              filters.push(this.regexp(this.extractRegexp(op, queryPart['$options']), key));
               break loop;
             case '$gte':
               filters.push(hi.compare(key, _.gte, op));
@@ -78,13 +75,7 @@ export default class QueryCompiler {
               filters.push(hi.compare(key, _.lt, op));
               break;
             case '$elemMatch':
-              filters.push(_.flow([
-                _.get(key),
-                _.map(
-                    hi.and(this._compilePredicates(op))
-                ),
-                _.some(Boolean)
-              ]));
+              filters.push(_.flow([_.get(key), _.map(hi.and(this._compilePredicates(op))), _.some(Boolean)]));
               break;
             case '$exists':
               filters.push(hi.exists(key, op));
@@ -106,9 +97,7 @@ export default class QueryCompiler {
             );
             break;
           case '$and':
-            filters.push(
-              hi.and(this._subQuery(queryPart))
-            );
+            filters.push(hi.and(this._subQuery(queryPart)));
             break;
           default:
             throw new Error('No support for: ' + key);
@@ -130,26 +119,26 @@ export default class QueryCompiler {
       filter = filters[0];
     }
     return filter;
-  };
-  
+  }
+
   _subQuery(queries: any): any[] {
     let res = _.map(this._compilePredicates.bind(this))(queries);
     // should check if there are bad side effects...
-    for(let i=0;i<res.length; i++) {
-      if(res[i].length > 1) {
+    for (let i = 0; i < res.length; i++) {
+      if (res[i].length > 1) {
         res[i] = hi.and(res[i]);
       }
     }
-  
+
     return _.flatten(res);
-  };
-  
+  }
+
   private regexp(regex: RegExp, key: any) {
     return hi.check(key, function (v: any) {
       return regex.test(v);
     });
-  };
-  
+  }
+
   private extractRegexp(regex: RegExp, options: string) {
     let patternExtractor = /\/?(.*)\/.*/;
     let re: RegExpMatchArray | RegExp | null = regex;
@@ -164,5 +153,5 @@ export default class QueryCompiler {
       throw new Error('Wrong with regexp: ' + regex);
     }
     return re;
-  };
+  }
 }

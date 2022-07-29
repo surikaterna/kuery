@@ -21,17 +21,17 @@ describe('QueryCompiler', function () {
   describe('_compilePredicates', function () {
     it('compile eq query', function () {
       const compiler = new QueryCompiler();
-      const p = compiler._compilePredicates({age:10});
-      expect(p[0]({age:10})).toBe(true);
+      const p = compiler._compilePredicates({ age: 10 });
+      expect(p[0]({ age: 10 })).toBe(true);
       // p[0]({age:10}).should.be.true;
-    })
+    });
   });
   describe('_subQuery', function () {
     it('compile eq query', function () {
       const compiler = new QueryCompiler();
-      const p = compiler._subQuery([{age:10}]);
-      expect(p[0]({age:10})).toBe(true);
+      const p = compiler._subQuery([{ age: 10 }]);
+      expect(p[0]({ age: 10 })).toBe(true);
       // p[0]({age:10}).should.be.true;
-    })
+    });
   });
 });

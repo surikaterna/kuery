@@ -1,5 +1,5 @@
-import _ from "lodash/fp";
-import __ from "lodash";
+import _ from 'lodash/fp';
+import __ from 'lodash';
 
 const hi = {
   __logN: function (name: any) {
@@ -7,7 +7,7 @@ const hi = {
       // @ts-ignore
       console.log('>>(' + name + ') ', v);
       return v;
-    }
+    };
   },
   __log: function (v: any) {
     // @ts-ignore
@@ -75,7 +75,7 @@ const hi = {
         hi._collect(result, e, path);
       });
     } else {
-      while ((element !== null && element !== undefined) && index < length) {
+      while (element !== null && element !== undefined && index < length) {
         element = element[path[index++]];
         if (_.isArray(element)) {
           hi._collect(result, element, __.slice(path, index));
@@ -87,6 +87,6 @@ const hi = {
       }
     }
   }
-}
+};
 
 export default hi;

@@ -5,13 +5,19 @@ const collection = [
   { id: 1, name: 'Andreas', address: { street: 'Bellmansgatan' }, born: new Date('1980-01-01T12:00:00.000Z'), isActive: true },
   { id: 2, name: 'Sven', address: {}, girlfriends: [{ wife: {} }], born: new Date('1989-01-01T12:00:00.000Z'), isActive: true },
   { id: 3, name: 'Christian', born: new Date('1990-01-01T12:00:00.000Z'), girlfriends: { wife: {} }, isActive: false },
-  { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z') },
+  {
+    id: 4,
+    name: 'Emil',
+    girlfriends: [
+      { name: 'fanny', hotness: 10 },
+      { name: 'eve', hotness: 1000 }
+    ],
+    born: new Date('1982-01-01T12:00:00.000Z')
+  },
   { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') }
 ];
 
-const collectionWithNull = [
-  { id: 6, name: 'KE', girlfriends: null }
-];
+const collectionWithNull = [{ id: 6, name: 'KE', girlfriends: null }];
 
 describe('Kuery', function () {
   it('should return 0 for empty collection', function () {
@@ -34,15 +40,15 @@ describe('Kuery', function () {
 
   it('should return correct element for property not eq query', function () {
     const q = new Kuery({ id: { $ne: 2 } });
-    expect(q.find(collection).length).toEqual(4)
+    expect(q.find(collection).length).toEqual(4);
   });
   it('should return correct elements for property in query', function () {
     const q = new Kuery({ id: { $in: [1, 2] } });
-    expect(q.find(collection).length).toEqual(2)
+    expect(q.find(collection).length).toEqual(2);
   });
   it('should return correct elements for property in $nin query', function () {
     const q = new Kuery({ id: { $nin: [1, 2] } });
-    expect(q.find(collection).length).toEqual(3)
+    expect(q.find(collection).length).toEqual(3);
   });
   it('should return all elements for property with empty $nin query', function () {
     const q = new Kuery({ id: { $nin: [] } });
@@ -138,20 +144,14 @@ describe('Kuery', function () {
   });
   it('should return correct elements for $or query', function () {
     const q = new Kuery({
-      $or: [
-        { name: /andr.*/i }
-        , { name: /emil.*/i }
-      ]
+      $or: [{ name: /andr.*/i }, { name: /emil.*/i }]
     });
     expect(q.find(collection).length).toEqual(2);
     // q.find(collection).length.should.equal(2);
   });
   it('should return correct elements for $or query when both sides return same element', function () {
     const q = new Kuery({
-      $or: [
-        { name: /andr.*/i },
-        { name: /andr.*/i }
-      ]
+      $or: [{ name: /andr.*/i }, { name: /andr.*/i }]
     });
     expect(q.find(collection).length).toEqual(1);
     // q.find(collection).length.should.equal(1);
@@ -263,5 +263,4 @@ describe('Kuery', function () {
     expect(q.find(collection).length).toEqual(1);
     // q.find(collection).length.should.equal(1);
   });
-
 });

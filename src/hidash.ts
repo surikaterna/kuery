@@ -1,5 +1,5 @@
-import _ from 'lodash/fp';
-import __ from 'lodash';
+import { forEach, slice } from 'lodash';
+import fp, { isArray, some } from 'lodash/fp';
 
 const hi = {
   __logN: function (name: any) {
@@ -40,7 +40,7 @@ const hi = {
     var res;
     if (key.indexOf('.') !== -1) {
       res = function (v: any) {
-        return _.some(op)(hi.collect(key)(v));
+        return some(op)(hi.collect(key)(v));
       };
     } else {
       res = function (v: any) {
@@ -50,7 +50,7 @@ const hi = {
     return res;
   },
   compare: function COMP(key: any, op: any, arg: any) {
-    return hi.check(key, op(_, arg));
+    return hi.check(key, op(fp, arg));
   },
   exists: function exists(key: any, op: any) {
     return hi.check(key, function (v: any) {
@@ -70,15 +70,15 @@ const hi = {
     var length = path.length;
     var element = object;
 
-    if (_.isArray(object)) {
-      __.forEach(object, function (e) {
+    if (isArray(object)) {
+      forEach(object, function (e) {
         hi._collect(result, e, path);
       });
     } else {
       while (element !== null && element !== undefined && index < length) {
         element = element[path[index++]];
-        if (_.isArray(element)) {
-          hi._collect(result, element, __.slice(path, index));
+        if (isArray(element)) {
+          hi._collect(result, element, slice(path, index));
           element = null;
         }
       }

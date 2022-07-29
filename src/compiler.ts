@@ -1,4 +1,4 @@
-import _ from 'lodash/fp';
+import { filter, keys, clone, forEach, flow, negate, eq, includes, gte, gt, lte, lt, get, map, some, flatten, isString, isRegExp } from 'lodash/fp';
 import hi from './hidash';
 import { Query } from './types';
 
@@ -7,27 +7,27 @@ export default class QueryCompiler {
     const filters = this._compilePredicates(query) as any[];
     let filtered;
     if (filters.length === 1) {
-      filtered = _.filter(filters[0]);
+      filtered = filter(filters[0]);
     } else {
       filtered = filters.map(function (v) {
-        return _.filter(v);
+        return filter(v);
       });
-      filtered = _.flow(filtered);
+      filtered = flow(filtered);
     }
     return filtered;
   }
 
   _compilePredicates(query: Query): any {
     let self = this;
-    let keys = _.keys(query);
+    let _keys = keys(query);
     let filters: any[] = [];
     // if empty query, operation = clone collection
-    if (!keys.length) {
-      return _.clone;
+    if (!_keys.length) {
+      return clone;
     }
-    _.forEach(function (key: string) {
+    forEach(function (key: string) {
       filters = filters.concat(self.compilePart(key, query[key]));
-    })(keys);
+    })(_keys);
     return filters;
   }
 
@@ -48,34 +48,34 @@ export default class QueryCompiler {
           op = queryPart[queryPartType];
           switch (queryPartType) {
             case '$eq':
-              filters.push(hi.compare(key, _.eq, op));
+              filters.push(hi.compare(key, eq, op));
               break;
             case '$ne':
-              filters.push(_.negate(this.compilePart(key, op)));
+              filters.push(negate(this.compilePart(key, op)));
               break;
             case '$in':
-              filters.push(hi.compare(key, _.includes, op));
+              filters.push(hi.compare(key, includes, op));
               break;
             case '$nin':
-              filters.push(_.negate(hi.compare(key, _.includes, op)));
+              filters.push(negate(hi.compare(key, includes, op)));
               break;
             case '$regex':
               filters.push(this.regexp(this.extractRegexp(op, queryPart['$options']), key));
               break loop;
             case '$gte':
-              filters.push(hi.compare(key, _.gte, op));
+              filters.push(hi.compare(key, gte, op));
               break;
             case '$lte':
-              filters.push(hi.compare(key, _.lte, op));
+              filters.push(hi.compare(key, lte, op));
               break;
             case '$gt':
-              filters.push(hi.compare(key, _.gt, op));
+              filters.push(hi.compare(key, gt, op));
               break;
             case '$lt':
-              filters.push(hi.compare(key, _.lt, op));
+              filters.push(hi.compare(key, lt, op));
               break;
             case '$elemMatch':
-              filters.push(_.flow([_.get(key), _.map(hi.and(this._compilePredicates(op))), _.some(Boolean)]));
+              filters.push(flow([get(key), map(hi.and(this._compilePredicates(op))), some(Boolean)]));
               break;
             case '$exists':
               filters.push(hi.exists(key, op));
@@ -108,7 +108,7 @@ export default class QueryCompiler {
       case 'Boolean':
       case 'String':
       case 'Null':
-        filters.push(hi.check(key, _.eq(queryPart)));
+        filters.push(hi.check(key, eq(queryPart)));
         break;
       default:
         throw new Error('Unable to parse query + ' + key + ' | ' + queryPart);
@@ -122,7 +122,7 @@ export default class QueryCompiler {
   }
 
   _subQuery(queries: any): any[] {
-    let res = _.map(this._compilePredicates.bind(this))(queries);
+    let res = map(this._compilePredicates.bind(this))(queries);
     // should check if there are bad side effects...
     for (let i = 0; i < res.length; i++) {
       if (res[i].length > 1) {
@@ -130,7 +130,7 @@ export default class QueryCompiler {
       }
     }
 
-    return _.flatten(res);
+    return flatten(res);
   }
 
   private regexp(regex: RegExp, key: any) {
@@ -142,9 +142,9 @@ export default class QueryCompiler {
   private extractRegexp(regex: RegExp, options: string) {
     let patternExtractor = /\/?(.*)\/.*/;
     let re: RegExpMatchArray | RegExp | null = regex;
-    if (_.isString(regex)) {
+    if (isString(regex)) {
       re = new RegExp(regex, options);
-    } else if (_.isRegExp(regex)) {
+    } else if (isRegExp(regex)) {
       if (options) {
         re = regex.toString().match(patternExtractor);
         re = new RegExp(re?.[1] ?? '', options);

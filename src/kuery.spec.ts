@@ -1,4 +1,3 @@
-import _ from 'lodash/fp';
 import Kuery from '.';
 
 const collection = [

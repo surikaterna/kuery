@@ -1,0 +1,20 @@
+{
+    "include": ["src", "types"],
+    "exclude": ["node_modules", "**/*.spec.ts"],
+    "compilerOptions": {
+      "module": "esnext",
+      "lib": ["esnext"],
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "strict": true,
+      "rootDir": "./src",
+      "outDir": "./lib",
+      "declaration": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "emitDeclarationOnly": true,
+      "types": ["jest"],
+      "skipLibCheck": true,
+      "typeRoots": ["./node_modules/@types", "./types"]
+    }
+  }

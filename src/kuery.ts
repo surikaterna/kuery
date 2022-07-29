@@ -1,60 +1,76 @@
-import _ from "lodash/fp"
-// var _ = require('lodash/fp');
+import _ from "lodash/fp";
+import QueryCompiler from "./compiler";
+import { Collection, KueryOptions, Query } from "./types";
 
-var QueryCompiler = require('./compiler');
-var Kuery = function (query) {
-  this._query = query || {};
-  this._compiledQuery = new QueryCompiler().compile(this._query);
-  this._options = {};
-};
-Kuery.prototype.skip = function (skip) {
-  this._options.skip = skip;
-  return this;
-};
+class Kuery {
 
-Kuery.prototype.limit = function (limit) {
-  this._options.limit = limit;
-  return this;
-};
+  protected query: Query;
+  protected compiler: (...args: any) => void;
+  protected options: KueryOptions;
 
-Kuery.prototype.sort = function (sort) {
-  this._options.sort = sort;
-  return this;
-};
-
-Kuery.prototype.find = function (collection) {
-  var q = [this._compiledQuery];
-  if (this._options.sort) {
-    var self = this;
-    var sortKeys = _.keys(this._options.sort);
-    var sortDir = _.map(function (key) {
-      if (self._options.sort[key] > 0)
-        return 'asc';
-      else
-        return 'desc';
-    })(sortKeys);
-    q.push(_.orderBy(sortKeys, sortDir));
+  constructor(query: Query) {
+    this.query = query;
+    this.compiler = new QueryCompiler().compile(this.query);
+    this.options = {} as KueryOptions;
   }
-  if (this._options.skip) {
-    q.push(_.drop(this._options.skip));
-  }
-  if (this._options.limit) {
-    q.push(_.take(this._options.limit));
-  }
-  if (q.length > 1) {
-    q = _.flow(q);
-  } else {
-    q = q[0];
-  }
-  return q(collection);
-};
 
-Kuery.prototype.findOne = function (collection, options) {
-  var result = this.find(collection, options);
-  if (result.length !== 1) {
-    throw new Error('findOne returned ' + result.length + ' results.');
-  }
-  return result[0];
-};
+  skip(skip: KueryOptions['skip']) {
+    this.options.skip = skip;
+    return this;
+  };
+  
+  limit(limit: KueryOptions['limit']) {
+    this.options.limit = limit;
+    return this;
+  };
+  
+  sort(sort: KueryOptions['sort']) {
+    this.options.sort = sort;
+    return this;
+  };
+  
+  find<T extends Collection>(collection: T): T {
+    let q: any = [this.compiler];
+    
+    // Check if we have sort, if we do push it into q
+    if (this.options.sort) {
+      let self = this;
+      let sortKeys = _.keys(this.options.sort);
+      let sortDir = _.map(function (key: string) {
+        if (self.options.sort[key] > 0)
+          return 'asc';
+        else
+          return 'desc';
+      })(sortKeys);
+      q.push(_.orderBy(sortKeys, sortDir));
+    }
 
-module.exports = Kuery;
+    // Check if we have skip, if we do push it into q
+    if (this.options.skip) {
+      q.push(_.drop(this.options.skip));
+    }
+
+    // Check if we have limit, if we do push it into q
+    if (this.options.limit) {
+      q.push(_.take(this.options.limit));
+    }
+
+    if (q.length > 1) {
+      q = _.flow(q);
+    } else {
+      q = q[0];
+    }
+
+    return q(collection);
+  };
+  
+  findOne<T extends Collection>(collection: T): T[0] {
+    let result = this.find(collection);
+    if (result.length !== 1) {
+      throw new Error('findOne returned ' + result.length + ' results.');
+    }
+    return result[0];
+  };
+}
+
+export default Kuery;

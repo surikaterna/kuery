@@ -13,7 +13,10 @@
     "compile.src.watch": "npm run compile.src -- --watch",
     "compile.types": "tsc",
     "compile.types.watch": "npm run compile.types -- --watch",
-    "prepare": "npm test && npm run compile"
+    "prepare": "npm test && npm run compile",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix src",
+    "format": "prettier --write src"
   },
   "repository": {
     "type": "git",
@@ -24,6 +27,7 @@
   "bugs": {
     "url": "https://github.com/surikaterna/kuery/issues"
   },
+  "prettier": "prettier-config-surikaterna",
   "devDependencies": {
     "@swc/cli": "^0.1.57",
     "@swc/core": "^1.2.220",
@@ -37,9 +41,11 @@
     "jest": "^28.1.3",
     "jshint": "^2.5.10",
     "rimraf": "^3.0.2",
+    "ts-jest": "^28.0.7",
     "tslib": "^2.4.0",
     "typescript": "^4.7.4",
-    "ts-jest": "^28.0.7"
+    "prettier": "^2.7.1",
+    "prettier-config-surikaterna": "^1.0.1"
   },
   "homepage": "https://github.com/surikaterna/kuery#readme",
   "dependencies": {

@@ -1,4 +1,5 @@
-var _ = require('lodash/fp');
+import _ from "lodash/fp"
+// var _ = require('lodash/fp');
 
 var QueryCompiler = require('./compiler');
 var Kuery = function (query) {

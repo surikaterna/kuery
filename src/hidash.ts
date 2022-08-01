@@ -40,7 +40,7 @@ const hi = {
   compare: function COMP(key: string, op: any, arg: any) {
     return hi.check(key, op(fp, arg));
   },
-  exists: function exists(key: any, op: any) {
+  exists: function exists(key: string, op: any) {
     return hi.check(key, function (v: any) {
       return op ? !!v : !v;
     });

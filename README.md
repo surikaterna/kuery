@@ -16,7 +16,7 @@ interface Address {
 	street: string;
 }
 
-const collection = [
+const collection: Array<Person> = [
   { id: 1, name: 'Andreas', address: { street: 'Bellmansgatan' }},
   { id: 2, name: 'Sven' },
   { id: 3, name: 'Christian' },

@@ -6,6 +6,16 @@ Simple Mongo-like queries with lo-dash, at the moment the operators are very lim
 ```ts
 import Kuery from 'Kuery';
 
+interface Person {
+	id: number;
+	name: string;
+	address?: Address;
+}
+
+interface Address {
+	street: string;
+}
+
 const collection = [
   { id: 1, name: 'Andreas', address: { street: 'Bellmansgatan' }},
   { id: 2, name: 'Sven' },
@@ -13,9 +23,9 @@ const collection = [
   { id: 4, name: 'Emil' }
 ];
 
-const idListKuery = new Kuery({ id: { $in: [1, 2] }});
+const idListKuery = new Kuery<Person>({ id: { $in: [1, 2] }});
 expect(idListKuery.find(collection).length).toEqual(2);
 
-const nestedPathKuery = new Kuery({ 'address.street': 'Bellmansgatan' });
+const nestedPathKuery = new Kuery<Person>({ 'address.street': 'Bellmansgatan' });
 expect(nestedPathKuery.find(collection).length).toEqual(1);
 ```

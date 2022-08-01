@@ -1,8 +1,10 @@
 import { forEach, slice } from 'lodash';
 import fp, { isArray, some } from 'lodash/fp';
 
+export type funcArray<A,R> = Array<(t: A) => R>;
+
 const hi = {
-  or: function OR(predicates: Array<(t: any) => boolean>) {
+  or: function OR(predicates: funcArray<any, boolean>) {
     return function (v: any) {
       let i;
       for (i = 0; i < predicates.length; i++) {
@@ -13,7 +15,7 @@ const hi = {
       return false;
     };
   },
-  and: function AND(predicates: Array<(t: any) => boolean>) {
+  and: function AND(predicates: funcArray<any, boolean>) {
     return function (v: any) {
       let i;
       for (i = 0; i < predicates.length; i++) {

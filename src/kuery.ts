@@ -8,12 +8,8 @@ export interface KueryOptions {
   sort: Record<string, number>;
 }
 
-export type Collection = Array<{
-  [key: string]: any;
-}>;
 
-
-class Kuery {
+class Kuery<T extends object = Record<string, any>> {
   protected query: Query;
   protected compiler: (...args: any) => void;
   protected options: KueryOptions;
@@ -39,7 +35,7 @@ class Kuery {
     return this;
   }
 
-  find<C extends Collection>(collection: C): C {
+  find(collection: Array<T>): Array<T> {
     let q: any = [this.compiler];
 
     // Check if we have sort, if we do push it into q
@@ -72,7 +68,7 @@ class Kuery {
     return q(collection);
   }
 
-  findOne<C extends Collection>(collection: C): C[0] {
+  findOne(collection: Array<T>): T {
     let result = this.find(collection);
     if (result.length !== 1) {
       throw new Error('findOne returned ' + result.length + ' results.');

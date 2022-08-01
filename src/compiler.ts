@@ -2,7 +2,7 @@ import { filter, keys, clone, forEach, flow, negate, eq, includes, gte, gt, lte,
 import hi, { funcArray } from './hidash';
 import { Query } from './types';
 
-type hasObjectQuery<T> = T extends Query ? true : false;
+type hasObjectQuery<T extends Query> = T extends Query ? true : false;
 type _compilePredicatesReturnType<T> = T extends true ? funcArray<any, boolean> : typeof clone<boolean>;
 
 export default class QueryCompiler {
@@ -124,12 +124,12 @@ export default class QueryCompiler {
     return filter;
   }
 
-  _subQuery<T extends Query[]>(queries: T): Array<(t: Query) => boolean> {
-    let res = map(this._compilePredicates.bind(this))(queries);
+  _subQuery<T extends Query[]>(queries: T): Array<(t: any) => boolean> {
+    let res = map(this._compilePredicates.bind(this))<any>(queries);
     // should check if there are bad side effects...
     for (let i = 0; i < res.length; i++) {
       if (res[i].length > 1) {
-        res[i] = [hi.and(res[i])];
+        res[i] = hi.and(res[i]);
       }
     }
 

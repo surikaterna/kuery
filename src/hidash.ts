@@ -15,7 +15,7 @@ const hi = {
       return false;
     };
   },
-  and: function AND(predicates: funcArray<any, boolean>) {
+  and: function AND<R extends any = any>(predicates: R extends any ? any : funcArray<any, boolean>) {
     return function (v: any) {
       let i;
       for (i = 0; i < predicates.length; i++) {

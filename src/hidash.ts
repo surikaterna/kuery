@@ -2,16 +2,6 @@ import { forEach, slice } from 'lodash';
 import fp, { isArray, some } from 'lodash/fp';
 
 const hi = {
-  __logN: function (name: any) {
-    return function (v: any) {
-      console.log('>>(' + name + ') ', v);
-      return v;
-    };
-  },
-  __log: function (v: any) {
-    console.log('>>', v);
-    return v;
-  },
   or: function OR(predicates: Array<(t: any) => boolean>) {
     return function (v: any) {
       var i;

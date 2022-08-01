@@ -4,17 +4,15 @@ import fp, { isArray, some } from 'lodash/fp';
 const hi = {
   __logN: function (name: any) {
     return function (v: any) {
-      // @ts-ignore
       console.log('>>(' + name + ') ', v);
       return v;
     };
   },
   __log: function (v: any) {
-    // @ts-ignore
     console.log('>>', v);
     return v;
   },
-  or: function OR(predicates: any) {
+  or: function OR(predicates: Array<(t: any) => boolean>) {
     return function (v: any) {
       var i;
       for (i = 0; i < predicates.length; i++) {
@@ -25,7 +23,7 @@ const hi = {
       return false;
     };
   },
-  and: function AND(predicates: any) {
+  and: function AND(predicates: Array<(t: any) => boolean>) {
     return function (v: any) {
       var i;
       for (i = 0; i < predicates.length; i++) {
@@ -36,7 +34,7 @@ const hi = {
       return true;
     };
   },
-  check: function check(key: any, op: any) {
+  check: function check(key: string, op: (t: any) => boolean) {
     var res;
     if (key.indexOf('.') !== -1) {
       res = function (v: any) {
@@ -49,7 +47,7 @@ const hi = {
     }
     return res;
   },
-  compare: function COMP(key: any, op: any, arg: any) {
+  compare: function COMP(key: string, op: any, arg: any) {
     return hi.check(key, op(fp, arg));
   },
   exists: function exists(key: any, op: any) {
@@ -57,7 +55,7 @@ const hi = {
       return op ? !!v : !v;
     });
   },
-  collect: function collect(key: any) {
+  collect: function collect(key: string) {
     return function (v: any) {
       var path = key.split('.');
       var res: any[] = [];
@@ -65,7 +63,7 @@ const hi = {
       return res;
     };
   },
-  _collect: function _collect(result: any, object: any, path: any) {
+  _collect: function _collect(result: any[], object: any, path: any) {
     var index = 0;
     var length = path.length;
     var element = object;

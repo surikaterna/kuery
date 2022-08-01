@@ -37,10 +37,10 @@ const hi = {
     }
     return res;
   },
-  compare: function COMP(key: string, op: any, arg: any) {
+  compare: function COMP(key: string, op: (...a: any) => any, arg: number | object) {
     return hi.check(key, op(fp, arg));
   },
-  exists: function exists(key: string, op: any) {
+  exists: function exists(key: string, op: boolean) {
     return hi.check(key, function (v: any) {
       return op ? !!v : !v;
     });
@@ -53,7 +53,7 @@ const hi = {
       return res;
     };
   },
-  _collect: function _collect(result: any[], object: any, path: any) {
+  _collect: function _collect<R>(result: Array<R>, object: any, path: string[]) {
     var index = 0;
     var length = path.length;
     var element = object;

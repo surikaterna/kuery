@@ -1,6 +1,17 @@
 import { drop, flow, keys, map, orderBy, take } from 'lodash/fp';
 import QueryCompiler from './compiler';
-import { Collection, KueryOptions, Query } from './types';
+import { Query } from './types';
+
+export interface KueryOptions {
+  skip: number;
+  limit: number;
+  sort: Record<string, number>;
+}
+
+export type Collection = Array<{
+  [key: string]: any;
+}>;
+
 
 class Kuery {
   protected query: Query;
@@ -28,7 +39,7 @@ class Kuery {
     return this;
   }
 
-  find<T extends Collection>(collection: T): T {
+  find<C extends Collection>(collection: C): C {
     let q: any = [this.compiler];
 
     // Check if we have sort, if we do push it into q
@@ -61,7 +72,7 @@ class Kuery {
     return q(collection);
   }
 
-  findOne<T extends Collection>(collection: T): T[0] {
+  findOne<C extends Collection>(collection: C): C[0] {
     let result = this.find(collection);
     if (result.length !== 1) {
       throw new Error('findOne returned ' + result.length + ' results.');

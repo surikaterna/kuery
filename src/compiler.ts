@@ -4,12 +4,12 @@ import { Query } from './types';
 
 export default class QueryCompiler {
   compile(query: Query) {
-    const filters = this._compilePredicates(query) as any[];
+    const filters = this._compilePredicates(query);
     let filtered;
     if (filters.length === 1) {
       filtered = filter(filters[0]);
     } else {
-      filtered = filters.map(function (v) {
+      filtered = filters.map(function (v: any) {
         return filter(v);
       });
       filtered = flow(filtered);

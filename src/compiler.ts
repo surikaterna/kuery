@@ -36,7 +36,7 @@ export default class QueryCompiler {
     return type.substr(0, type.length - 1);
   }
 
-  private compilePart(key: keyof Query, queryPart: Query[keyof Query]): any {
+  private compilePart(key: keyof Query, queryPart: Query[keyof Query]): (...args: any[]) => any {
     let op;
     let queryPartType = null;
     let type = this.getType(queryPart);

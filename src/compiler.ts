@@ -2,6 +2,9 @@ import { filter, keys, clone, forEach, flow, negate, eq, includes, gte, gt, lte,
 import hi from './hidash';
 import { Query } from './types';
 
+type hasObjectQuery<T> = T extends Query ? true : false;
+type _compilePredicatesReturnType<T> = T extends true ? Array<(t: any) => boolean> : typeof clone<boolean>
+
 export default class QueryCompiler {
   compile(query: Query) {
     const filters = this._compilePredicates(query);
@@ -17,18 +20,18 @@ export default class QueryCompiler {
     return filtered;
   }
 
-  _compilePredicates(query: Query): any {
+  _compilePredicates<Q extends Query>(query: Q): _compilePredicatesReturnType<hasObjectQuery<Q>> {
     let self = this;
     let _keys = keys(query);
-    let filters: any[] = [];
+    let filters: Array<(t: Query) => boolean> = [];
     // if empty query, operation = clone collection
     if (!_keys.length) {
-      return clone;
+      return clone as _compilePredicatesReturnType<hasObjectQuery<Q>>;
     }
     forEach(function (key: string) {
       filters = filters.concat(self.compilePart(key, query[key]));
     })(_keys);
-    return filters;
+    return filters as _compilePredicatesReturnType<hasObjectQuery<Q>>;
   }
 
   private getType(val: string) {
@@ -36,7 +39,7 @@ export default class QueryCompiler {
     return type.substr(0, type.length - 1);
   }
 
-  private compilePart(key: keyof Query, queryPart: Query[keyof Query]): (...args: any[]) => any {
+  private compilePart<K extends keyof Query>(key: K, queryPart: Query[K]): (...args: any[]) => any {
     let op;
     let queryPartType = null;
     let type = this.getType(queryPart);
@@ -75,7 +78,7 @@ export default class QueryCompiler {
               filters.push(hi.compare(key, lt, op));
               break;
             case '$elemMatch':
-              filters.push(flow([get(key), map(hi.and(this._compilePredicates(op))), some(Boolean)]));
+              filters.push(flow([get(key), map(hi.and(this._compilePredicates<Query>(op))), some(Boolean)]));
               break;
             case '$exists':
               filters.push(hi.exists(key, op));
@@ -126,7 +129,7 @@ export default class QueryCompiler {
     // should check if there are bad side effects...
     for (let i = 0; i < res.length; i++) {
       if (res[i].length > 1) {
-        res[i] = hi.and(res[i]);
+        res[i] = [hi.and(res[i])];
       }
     }
 

@@ -4,7 +4,7 @@ import fp, { isArray, some } from 'lodash/fp';
 const hi = {
   or: function OR(predicates: Array<(t: any) => boolean>) {
     return function (v: any) {
-      var i;
+      let i;
       for (i = 0; i < predicates.length; i++) {
         if (predicates[i](v)) {
           return true;
@@ -15,7 +15,7 @@ const hi = {
   },
   and: function AND(predicates: Array<(t: any) => boolean>) {
     return function (v: any) {
-      var i;
+      let i;
       for (i = 0; i < predicates.length; i++) {
         if (!predicates[i](v)) {
           return false;
@@ -25,7 +25,7 @@ const hi = {
     };
   },
   check: function check(key: string, op: (t: any) => boolean) {
-    var res;
+    let res;
     if (key.indexOf('.') !== -1) {
       res = function (v: any) {
         return some(op)(hi.collect(key)(v));
@@ -47,16 +47,16 @@ const hi = {
   },
   collect: function collect(key: string) {
     return function (v: any) {
-      var path = key.split('.');
-      var res: any[] = [];
+      let path = key.split('.');
+      let res: any[] = [];
       hi._collect(res, v, path);
       return res;
     };
   },
   _collect: function _collect<R>(result: Array<R>, object: any, path: string[]) {
-    var index = 0;
-    var length = path.length;
-    var element = object;
+    let index = 0;
+    let length = path.length;
+    let element = object;
 
     if (isArray(object)) {
       forEach(object, function (e) {

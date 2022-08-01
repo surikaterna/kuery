@@ -133,8 +133,8 @@ export default class QueryCompiler {
     return flatten(res);
   }
 
-  private regexp(regex: RegExp, key: any) {
-    return hi.check(key, function (v: any) {
+  private regexp(regex: RegExp, key: string) {
+    return hi.check(key, function (v: string) {
       return regex.test(v);
     });
   }

@@ -110,7 +110,7 @@ export default class QueryCompiler {
         filters.push(hi.check(key, eq(queryPart)));
         break;
       default:
-        throw new Error('Unable to parse query + ' + key + ' | ' + queryPart);
+        throw new Error(`Unable to parse query + ${key} | ${queryPart}`);
     }
     if (filters.length > 1) {
       filter = hi.and(filters);

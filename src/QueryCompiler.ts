@@ -83,7 +83,7 @@ export default class QueryCompiler {
               filters.push(hi.exists(key, op));
               break;
             default:
-              throw new Error('No support for: ' + queryPartType);
+              throw new Error(`No support for: ${queryPartType}`);
           }
         }
         break;

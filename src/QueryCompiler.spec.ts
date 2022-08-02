@@ -1,5 +1,4 @@
-import _ from 'lodash/fp';
-import QueryCompiler from './compiler';
+import QueryCompiler from './QueryCompiler';
 
 describe('QueryCompiler', function () {
   describe('compile', function () {

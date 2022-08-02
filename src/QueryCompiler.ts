@@ -1,9 +1,9 @@
 import { filter, keys, clone, forEach, flow, negate, eq, includes, gte, gt, lte, lt, get, map, some, flatten, isString, isRegExp } from 'lodash/fp';
 import hi, { funcArray } from "./hidash";
-import { Query } from './types';
 
-type hasObjectQuery<T extends Query> = T extends Query ? true : false;
-type _compilePredicatesReturnType<T extends boolean> = T extends true ? funcArray<any, boolean> : typeof clone<boolean>;
+export type Query = Record<string, any>;
+export type hasObjectQuery<T extends Query> = T extends Query ? true : false;
+export type _compilePredicatesReturnType<T extends boolean> = T extends true ? funcArray<any, boolean> : typeof clone<boolean>;
 
 export default class QueryCompiler {
   compile(query: Query) {

@@ -38,8 +38,8 @@ class Kuery<T extends object = Record<string, any>> {
 
     // Check if we have sort, if we do push it into q
     if (this.options.sort) {
-      let sortKeys = keys(this.options.sort);
-      let sortDir = map((key: string) => {
+      const sortKeys = keys(this.options.sort);
+      const sortDir = map((key: string) => {
         // Typescript doesn't understand that is can't be undefined so casting it for now..
         if ((this.options.sort as KueryOptions["sort"])[key] > 0) return 'asc';
         else return 'desc';

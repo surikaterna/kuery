@@ -141,7 +141,7 @@ export default class QueryCompiler {
 
     // So the best solution is to say that res can either contain arrays of functions or just a function,
     // Then cast the type of res[i] for and
-    let res: (((v: any) => boolean) | funcArray<any, boolean>)[] = map(this._compilePredicates.bind(this))(queries);
+    const res: (((v: any) => boolean) | funcArray<any, boolean>)[] = map(this._compilePredicates.bind(this))(queries);
     // should check if there are bad side effects...
     for (let i = 0; i < res.length; i++) {
       // Assuming we got more functions inside of our array

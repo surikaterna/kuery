@@ -93,10 +93,7 @@ export default class QueryCompiler {
       case 'Array':
         switch (key) {
           case '$or':
-            filters.push(
-              // OR
-              hi.or(this._subQuery(queryPart))
-            );
+            filters.push(hi.or(this._subQuery(queryPart)));
             break;
           case '$and':
             filters.push(hi.and(this._subQuery(queryPart)));

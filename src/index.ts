@@ -1,2 +1,2 @@
-import Kuery from './kuery';
+import Kuery from './Kuery';
 export default Kuery;

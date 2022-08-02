@@ -3,7 +3,7 @@ import fp, { isArray, some } from 'lodash/fp';
 
 export type funcArray<A,R> = Array<(t: A) => R>;
 
-const hi = {
+const hidash = {
   or: function OR(predicates: funcArray<any, boolean>) {
     return function (v: any) {
       let i;
@@ -30,7 +30,7 @@ const hi = {
     let res;
     if (key.indexOf('.') !== -1) {
       res = function (v: any) {
-        return some(op)(hi.collect(key)(v));
+        return some(op)(hidash.collect(key)(v));
       };
     } else {
       res = function (v: any) {
@@ -40,10 +40,10 @@ const hi = {
     return res;
   },
   compare: function COMP(key: string, op: (...a: any) => any, arg: number | object) {
-    return hi.check(key, op(fp, arg));
+    return hidash.check(key, op(fp, arg));
   },
   exists: function exists(key: string, op: boolean) {
-    return hi.check(key, function (v: any) {
+    return hidash.check(key, function (v: any) {
       return op ? !!v : !v;
     });
   },
@@ -51,7 +51,7 @@ const hi = {
     return function (v: any) {
       let path = key.split('.');
       let res: any[] = [];
-      hi._collect(res, v, path);
+      hidash._collect(res, v, path);
       return res;
     };
   },
@@ -62,13 +62,13 @@ const hi = {
 
     if (isArray(object)) {
       forEach(object, function (e) {
-        hi._collect(result, e, path);
+        hidash._collect(result, e, path);
       });
     } else {
       while (element !== null && element !== undefined && index < length) {
         element = element[path[index++]];
         if (isArray(element)) {
-          hi._collect(result, element, slice(path, index));
+          hidash._collect(result, element, slice(path, index));
           element = null;
         }
       }
@@ -79,4 +79,4 @@ const hi = {
   }
 };
 
-export default hi;
+export default hidash;

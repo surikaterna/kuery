@@ -1,9 +1,9 @@
 import { filter, keys, clone, forEach, flow, negate, eq, includes, gte, gt, lte, lt, get, map, some, flatten, isString, isRegExp } from 'lodash/fp';
-import hi, { funcArray } from './hidash';
+import hi, { funcArray } from "./hidash";
 import { Query } from './types';
 
 type hasObjectQuery<T extends Query> = T extends Query ? true : false;
-type _compilePredicatesReturnType<T> = T extends true ? funcArray<any, boolean> : typeof clone<boolean>;
+type _compilePredicatesReturnType<T extends boolean> = T extends true ? funcArray<any, boolean> : typeof clone<boolean>;
 
 export default class QueryCompiler {
   compile(query: Query) {
@@ -39,7 +39,7 @@ export default class QueryCompiler {
     return type.substr(0, type.length - 1);
   }
 
-  private compilePart<K extends keyof Query>(key: K, queryPart: Query[K]): (...args: any[]) => any {
+  private compilePart<K extends keyof Query>(key: K, queryPart: Query[K]): ((...args: any[]) => any) | ((args: any) => boolean) {
     let op;
     let queryPartType = null;
     let type = this.getType(queryPart);
@@ -124,15 +124,36 @@ export default class QueryCompiler {
     return filter;
   }
 
-  _subQuery<T extends Query[]>(queries: T): Array<(t: any) => boolean> {
-    let res = map(this._compilePredicates.bind(this))<any>(queries);
+  _subQuery(queries: Query[]): funcArray<any, boolean> {
+    // _subQuery is suppose to return arrays of functions (check compiler.spec.ts for reference)
+
+    // res wants arrays that contains arrays of methods,
+    // [ [f], [f] ]
+    // Which works until "res[i] = hi.and(res[i]);" comes in,
+    // hi.and method returns a function since it combines,
+    // the array contains more methods inside of itself, so it combines them
+    // and returns a function. 
+    // [ [f, f], [f] ] => [ f, [f] ]
+    // Which doesn't work with the typings since res wants,
+    // to be an array of function, not just a function.
+
+    // It works logically since in the end we return flatten(res) which takes all of our arrays and flatten them to look like this:
+    // [ [f], [f], [f] ] => [ f, f, f ]
+
+    // We could do "res[i] = [hi.and(res[i])];" since that's kinda how it looked before, just contained more than one method inside of itself, now is just one.
+    // And in the end we flatten it.
+
+    // So the best solution is to say that res can either contain arrays of functions or just a function,
+    // Then cast the type of res[i] for and
+    let res: (((v: any) => boolean) | funcArray<any, boolean>)[] = map(this._compilePredicates.bind(this))(queries);
     // should check if there are bad side effects...
     for (let i = 0; i < res.length; i++) {
+      // Assuming we got more functions inside of our array
       if (res[i].length > 1) {
-        res[i] = hi.and(res[i]);
+        // Combine them into one function
+        res[i] = hi.and(res[i] as funcArray<any, boolean>);
       }
     }
-
     return flatten(res);
   }
 

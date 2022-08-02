@@ -41,9 +41,9 @@ export default class QueryCompiler {
   private compilePart<K extends keyof Query>(key: K, queryPart: Query[K]): ((...args: any[]) => any) | ((args: any) => boolean) {
     let op;
     let queryPartType = null;
-    let type = this.getType(queryPart);
+    const type = this.getType(queryPart);
     let filter;
-    let filters = [];
+    const filters = [];
     switch (type) {
       case 'Object':
         loop: for (queryPartType in queryPart) {

@@ -99,7 +99,7 @@ export default class QueryCompiler {
             filters.push(hi.and(this._subQuery(queryPart)));
             break;
           default:
-            throw new Error('No support for: ' + key);
+            throw new Error(`No support for: ${key}`);
         }
         break;
       // primitives

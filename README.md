@@ -7,13 +7,13 @@ Simple Mongo-like queries with lo-dash, at the moment the operators are very lim
 import Kuery from 'Kuery';
 
 interface Person {
-	id: number;
-	name: string;
-	address?: Address;
+  id: number;
+  name: string;
+  address?: Address;
 }
 
 interface Address {
-	street: string;
+  street: string;
 }
 
 const collection: Array<Person> = [

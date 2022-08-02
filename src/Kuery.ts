@@ -10,12 +10,12 @@ export interface KueryOptions {
 class Kuery<T extends object = Record<string, any>> {
   protected query: Query;
   protected compiler: (...args: any[]) => any;
-  protected options: KueryOptions;
+  protected options: Partial<KueryOptions>;
 
   constructor(query: Query) {
     this.query = query;
     this.compiler = new QueryCompiler().compile(this.query);
-    this.options = {} as KueryOptions;
+    this.options = {};
   }
 
   skip(skip: KueryOptions['skip']) {
@@ -40,7 +40,8 @@ class Kuery<T extends object = Record<string, any>> {
     if (this.options.sort) {
       let sortKeys = keys(this.options.sort);
       let sortDir = map((key: string) => {
-        if (this.options.sort[key] > 0) return 'asc';
+        // Typescript doesn't understand that is can't be undefined so casting it for now..
+        if ((this.options.sort as KueryOptions["sort"])[key] > 0) return 'asc';
         else return 'desc';
       })(sortKeys);
       q.push(orderBy(sortKeys, sortDir));

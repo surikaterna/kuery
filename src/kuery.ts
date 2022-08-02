@@ -9,7 +9,7 @@ export interface KueryOptions {
 
 class Kuery<T extends object = Record<string, any>> {
   protected query: Query;
-  protected compiler: (...args: any) => void;
+  protected compiler: (...args: any[]) => any;
   protected options: KueryOptions;
 
   constructor(query: Query) {
@@ -34,7 +34,7 @@ class Kuery<T extends object = Record<string, any>> {
   }
 
   find(collection: Array<T>): Array<T> {
-    let q: any = [this.compiler];
+    let q: ((typeof this.compiler) | (typeof flow)) | (Array<(typeof this.compiler)>) | ((a: T) => T[]) = [this.compiler];
 
     // Check if we have sort, if we do push it into q
     if (this.options.sort) {

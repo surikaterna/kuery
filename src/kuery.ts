@@ -39,10 +39,9 @@ class Kuery<T extends object = Record<string, any>> {
 
     // Check if we have sort, if we do push it into q
     if (this.options.sort) {
-      let self = this;
       let sortKeys = keys(this.options.sort);
-      let sortDir = map(function (key: string) {
-        if (self.options.sort[key] > 0) return 'asc';
+      let sortDir = map((key: string) => {
+        if (this.options.sort[key] > 0) return 'asc';
         else return 'desc';
       })(sortKeys);
       q.push(orderBy(sortKeys, sortDir));

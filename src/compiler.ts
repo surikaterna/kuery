@@ -21,15 +21,14 @@ export default class QueryCompiler {
   }
 
   _compilePredicates<Q extends Query>(query: Q): _compilePredicatesReturnType<hasObjectQuery<Q>> {
-    let self = this;
     let _keys = keys(query);
     let filters: funcArray<Query, boolean> = [];
     // if empty query, operation = clone collection
     if (!_keys.length) {
       return clone as _compilePredicatesReturnType<hasObjectQuery<Q>>;
     }
-    forEach(function (key: string) {
-      filters = filters.concat(self.compilePart(key, query[key]));
+    forEach((key: string) => {
+      filters = filters.concat(this.compilePart(key, query[key]));
     })(_keys);
     return filters as _compilePredicatesReturnType<hasObjectQuery<Q>>;
   }

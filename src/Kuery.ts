@@ -66,7 +66,7 @@ class Kuery<T extends object = Record<string, any>> {
   }
 
   findOne(collection: Array<T>): T {
-    let result = this.find(collection);
+    const result = this.find(collection);
     if (result.length !== 1) {
       throw new Error('findOne returned ' + result.length + ' results.');
     }

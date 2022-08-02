@@ -21,7 +21,7 @@ export default class QueryCompiler {
   }
 
   _compilePredicates<Q extends Query>(query: Q): _compilePredicatesReturnType<hasObjectQuery<Q>> {
-    let _keys = keys(query);
+    const _keys = keys(query);
     let filters: funcArray<Query, boolean> = [];
     // if empty query, operation = clone collection
     if (!_keys.length) {
@@ -34,7 +34,7 @@ export default class QueryCompiler {
   }
 
   private getType(val: string) {
-    let type = Object.prototype.toString.call(val).substr(8);
+    const type = Object.prototype.toString.call(val).substr(8);
     return type.substr(0, type.length - 1);
   }
 
@@ -163,7 +163,7 @@ export default class QueryCompiler {
   }
 
   private extractRegexp(regex: RegExp, options: string) {
-    let patternExtractor = /\/?(.*)\/.*/;
+    const patternExtractor = /\/?(.*)\/.*/;
     let re: RegExpMatchArray | RegExp = regex;
     if (isString(regex)) {
       re = new RegExp(regex, options);

@@ -8,7 +8,6 @@ export interface KueryOptions {
   sort: Record<string, number>;
 }
 
-
 class Kuery<T extends object = Record<string, any>> {
   protected query: Query;
   protected compiler: (...args: any) => void;

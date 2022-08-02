@@ -6,8 +6,7 @@ export type funcArray<A, R> = Array<(t: A) => R>;
 const hidash = {
   or: function OR(predicates: funcArray<any, boolean>) {
     return function (v: any) {
-      let i;
-      for (i = 0; i < predicates.length; i++) {
+      for (let i = 0; i < predicates.length; i++) {
         if (predicates[i](v)) {
           return true;
         }

@@ -16,8 +16,7 @@ const hidash = {
   },
   and: function AND(predicates: funcArray<any, boolean>) {
     return function (v: any) {
-      let i;
-      for (i = 0; i < predicates.length; i++) {
+      for (let i = 0; i < predicates.length; i++) {
         if (!predicates[i](v)) {
           return false;
         }

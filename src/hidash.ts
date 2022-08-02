@@ -1,13 +1,12 @@
 import { forEach, slice } from 'lodash';
 import fp, { isArray, some } from 'lodash/fp';
 
-export type funcArray<A,R> = Array<(t: A) => R>;
+export type funcArray<A, R> = Array<(t: A) => R>;
 
 const hidash = {
   or: function OR(predicates: funcArray<any, boolean>) {
     return function (v: any) {
-      let i;
-      for (i = 0; i < predicates.length; i++) {
+      for (let i = 0; i < predicates.length; i++) {
         if (predicates[i](v)) {
           return true;
         }
@@ -17,8 +16,7 @@ const hidash = {
   },
   and: function AND(predicates: funcArray<any, boolean>) {
     return function (v: any) {
-      let i;
-      for (i = 0; i < predicates.length; i++) {
+      for (let i = 0; i < predicates.length; i++) {
         if (!predicates[i](v)) {
           return false;
         }
@@ -57,7 +55,7 @@ const hidash = {
   },
   _collect: function _collect<R>(result: Array<R>, object: any, path: string[]) {
     let index = 0;
-    let length = path.length;
+    const length = path.length;
     let element = object;
 
     if (isArray(object)) {

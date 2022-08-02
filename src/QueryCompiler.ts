@@ -171,7 +171,7 @@ export default class QueryCompiler {
         re = new RegExp(re[1], options);
       }
     } else {
-      throw new Error('Wrong with regexp: ' + regex);
+      throw new Error(`Wrong with regexp: ${regex}`);
     }
     return re;
   }

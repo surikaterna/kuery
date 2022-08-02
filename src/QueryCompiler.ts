@@ -164,13 +164,14 @@ export default class QueryCompiler {
 
   private extractRegexp(regex: RegExp, options: string) {
     let patternExtractor = /\/?(.*)\/.*/;
-    let re: RegExpMatchArray | RegExp | null = regex;
+    let re: RegExpMatchArray | RegExp = regex;
     if (isString(regex)) {
       re = new RegExp(regex, options);
     } else if (isRegExp(regex)) {
       if (options) {
-        re = regex.toString().match(patternExtractor);
-        re = new RegExp(re?.[1] ?? '', options);
+        // Assuming it can't be null due to logic
+        re = regex.toString().match(patternExtractor) as RegExpMatchArray ;
+        re = new RegExp(re[1], options);
       }
     } else {
       throw new Error('Wrong with regexp: ' + regex);

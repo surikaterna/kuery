@@ -55,7 +55,7 @@ const hidash = {
   },
   _collect: function _collect<R>(result: Array<R>, object: any, path: string[]) {
     let index = 0;
-    let length = path.length;
+    const length = path.length;
     let element = object;
 
     if (isArray(object)) {

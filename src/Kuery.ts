@@ -34,14 +34,14 @@ class Kuery<T extends object = Record<string, any>> {
   }
 
   find(collection: Array<T>): Array<T> {
-    let q: ((typeof this.compiler) | (typeof flow)) | (Array<(typeof this.compiler)>) | ((a: T) => T[]) = [this.compiler];
+    let q: (typeof this.compiler | typeof flow) | Array<typeof this.compiler> | ((a: T) => T[]) = [this.compiler];
 
     // Check if we have sort, if we do push it into q
     if (this.options.sort) {
       const sortKeys = keys(this.options.sort);
       const sortDir = map((key: string) => {
         // Typescript doesn't understand that is can't be undefined so casting it for now..
-        if ((this.options.sort as KueryOptions["sort"])[key] > 0) return 'asc';
+        if ((this.options.sort as KueryOptions['sort'])[key] > 0) return 'asc';
         else return 'desc';
       })(sortKeys);
       q.push(orderBy(sortKeys, sortDir));

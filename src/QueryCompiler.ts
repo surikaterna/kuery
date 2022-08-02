@@ -1,5 +1,5 @@
 import { filter, keys, clone, forEach, flow, negate, eq, includes, gte, gt, lte, lt, get, map, some, flatten, isString, isRegExp } from 'lodash/fp';
-import hi, { funcArray } from "./hidash";
+import hi, { funcArray } from './hidash';
 
 export type Query = Record<string, any>;
 export type hasObjectQuery<T extends Query> = T extends Query ? true : false;
@@ -128,7 +128,7 @@ export default class QueryCompiler {
     // Which works until "res[i] = hi.and(res[i]);" comes in,
     // hi.and method returns a function since it combines,
     // the array contains more methods inside of itself, so it combines them
-    // and returns a function. 
+    // and returns a function.
     // [ [f, f], [f] ] => [ f, [f] ]
     // Which doesn't work with the typings since res wants,
     // to be an array of function, not just a function.
@@ -167,7 +167,7 @@ export default class QueryCompiler {
     } else if (isRegExp(regex)) {
       if (options) {
         // Assuming it can't be null due to logic
-        re = regex.toString().match(patternExtractor) as RegExpMatchArray ;
+        re = regex.toString().match(patternExtractor) as RegExpMatchArray;
         re = new RegExp(re[1], options);
       }
     } else {

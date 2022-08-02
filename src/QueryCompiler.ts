@@ -12,9 +12,7 @@ export default class QueryCompiler {
     if (filters.length === 1) {
       filtered = filter(filters[0]);
     } else {
-      filtered = filters.map(function (v: any) {
-        return filter(v);
-      });
+      filtered = filters.map((v: any) => filter(v));
       filtered = flow(filtered);
     }
     return filtered;
@@ -42,10 +40,11 @@ export default class QueryCompiler {
     let op;
     let queryPartType = null;
     const type = this.getType(queryPart);
-    let filter;
+    let _filter;
     const filters = [];
     switch (type) {
       case 'Object':
+        // eslint-disable-next-line no-restricted-syntax, no-labels, guard-for-in
         loop: for (queryPartType in queryPart) {
           op = queryPart[queryPartType];
           switch (queryPartType) {
@@ -62,7 +61,8 @@ export default class QueryCompiler {
               filters.push(negate(hi.compare(key, includes, op)));
               break;
             case '$regex':
-              filters.push(this.regexp(this.extractRegexp(op, queryPart['$options']), key));
+              filters.push(this.regexp(this.extractRegexp(op, queryPart.$options), key));
+              // eslint-disable-next-line no-labels
               break loop;
             case '$gte':
               filters.push(hi.compare(key, gte, op));
@@ -113,11 +113,12 @@ export default class QueryCompiler {
         throw new Error(`Unable to parse query + ${key} | ${queryPart}`);
     }
     if (filters.length > 1) {
-      filter = hi.and(filters);
+      _filter = hi.and(filters);
     } else {
-      filter = filters[0];
+      // eslint-disable-next-line prefer-destructuring
+      _filter = filters[0];
     }
-    return filter;
+    return _filter;
   }
 
   _subQuery(queries: Query[]): funcArray<any, boolean> {
@@ -154,9 +155,7 @@ export default class QueryCompiler {
   }
 
   private regexp(regex: RegExp, key: string) {
-    return hi.check(key, function (v: string) {
-      return regex.test(v);
-    });
+    return hi.check(key, (v: string) => regex.test(v));
   }
 
   private extractRegexp(regex: RegExp, options: string) {

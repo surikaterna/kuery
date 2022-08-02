@@ -42,7 +42,7 @@ class Kuery<T extends object = Record<string, any>> {
       const sortDir = map((key: string) => {
         // Typescript doesn't understand that is can't be undefined so casting it for now..
         if ((this.options.sort as KueryOptions['sort'])[key] > 0) return 'asc';
-        else return 'desc';
+        return 'desc';
       })(sortKeys);
       q.push(orderBy(sortKeys, sortDir));
     }
@@ -60,6 +60,7 @@ class Kuery<T extends object = Record<string, any>> {
     if (q.length > 1) {
       q = flow(q);
     } else {
+      // eslint-disable-next-line prefer-destructuring
       q = q[0];
     }
 

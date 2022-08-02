@@ -41,25 +41,23 @@ const hidash = {
     return hidash.check(key, op(fp, arg));
   },
   exists: function exists(key: string, op: boolean) {
-    return hidash.check(key, function (v: any) {
-      return op ? !!v : !v;
-    });
+    return hidash.check(key, (v: any) => (op ? !!v : !v));
   },
   collect: function collect(key: string) {
     return function (v: any) {
-      let path = key.split('.');
-      let res: any[] = [];
+      const path = key.split('.');
+      const res: any[] = [];
       hidash._collect(res, v, path);
       return res;
     };
   },
   _collect: function _collect<R>(result: Array<R>, object: any, path: string[]) {
     let index = 0;
-    const length = path.length;
+    const { length } = path;
     let element = object;
 
     if (isArray(object)) {
-      forEach(object, function (e) {
+      forEach(object, (e) => {
         hidash._collect(result, e, path);
       });
     } else {

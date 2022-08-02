@@ -1,7 +1,7 @@
 import { forEach, slice } from 'lodash';
 import fp, { isArray, some } from 'lodash/fp';
 
-export type funcArray<A,R> = Array<(t: A) => R>;
+export type funcArray<A, R> = Array<(t: A) => R>;
 
 const hidash = {
   or: function OR(predicates: funcArray<any, boolean>) {

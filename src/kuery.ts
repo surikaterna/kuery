@@ -1,6 +1,5 @@
 import { drop, flow, keys, map, orderBy, take } from 'lodash/fp';
-import QueryCompiler from './compiler';
-import { Query } from './types';
+import QueryCompiler, { Query } from './QueryCompiler';
 
 export interface KueryOptions {
   skip: number;

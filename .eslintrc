@@ -1,5 +1,5 @@
 {
-    "extends": ["eslint-config-surikat", "prettier"],
+    "extends": ["eslint-config-surikat", "prettier","plugin:@typescript-eslint/eslint-recommended", "plugin:@typescript-eslint/recommended"],
     "plugins": ["@typescript-eslint"],
     "parser": "@typescript-eslint/parser",
     "rules": {

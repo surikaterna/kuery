@@ -8,9 +8,9 @@ export interface KueryOptions {
 }
 
 class Kuery<T extends object = Record<string, any>> {
-  protected query: Query;
-  protected compiler: (...args: any[]) => any;
-  protected options: Partial<KueryOptions>;
+  private query: Query;
+  private compiler: (...args: any[]) => any;
+  private options: Partial<KueryOptions>;
 
   constructor(query: Query) {
     this.query = query;

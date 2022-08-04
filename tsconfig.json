@@ -1,0 +1,17 @@
+{
+    "include": ["src"],
+    "exclude": ["node_modules", "**/*.spec.ts"],
+    "compilerOptions": {
+      "module": "esnext",
+      "lib": ["esnext"],
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "strict": true,
+      "rootDir": "./src",
+      "outDir": "./lib",
+      "declaration": true,
+      "emitDeclarationOnly": true,
+      "types": ["jest"],
+      "skipLibCheck": true,
+    }
+  }

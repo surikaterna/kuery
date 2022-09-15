@@ -211,6 +211,10 @@ describe('Kuery', function () {
     var q = new Kuery({ 'girlfriends.wife': { $exists: true } });
     q.find(collection).length.should.equal(2);
   });
+  it("should return elements where given element does not exists deeply", function () {
+    var q = new Kuery({ "address.zipcode": { $exists: false } });
+    q.find(collection).length.should.equal(5);
+  });
   it('should return elements when query for boolean', function () {
     var q = new Kuery({ isActive: true });
     q.find(collection).length.should.equal(2);

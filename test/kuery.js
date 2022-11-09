@@ -216,11 +216,6 @@ describe("Kuery", function () {
       "bikes.bike": { $elemMatch: { brand: "trek" } },
     });
     q.find(collection).length.should.equal(1);
-
-    var op = _.flow([_.get("girlfriends")]);
-    console.log(op);
-    var result = op(collection);
-    console.log(result);
   });
   it("should return correct element for multipart elemMatch query", function () {
     var q = new Kuery({

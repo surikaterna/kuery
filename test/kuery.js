@@ -4,11 +4,48 @@ var should = require('should');
 
 
 var collection = [
-  { id: 1, name: 'Andreas', address: { street: 'Bellmansgatan' }, born: new Date('1980-01-01T12:00:00.000Z'), isActive: true },
-  { id: 2, name: 'Sven', address: {}, girlfriends: [{ wife: {} }], born: new Date('1989-01-01T12:00:00.000Z'), isActive: true },
-  { id: 3, name: 'Christian', born: new Date('1990-01-01T12:00:00.000Z'), girlfriends: { wife: {} }, isActive: false },
-  { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z') },
-  { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') }
+  {
+    id: 1,
+    name: 'Andreas',
+    address: { street: 'Bellmansgatan' },
+    born: new Date('1980-01-01T12:00:00.000Z'),
+    isActive: true,
+  },
+  {
+    id: 2,
+    name: 'Sven',
+    address: {},
+    girlfriends: [{ wife: {} }],
+    born: new Date('1989-01-01T12:00:00.000Z'),
+    isActive: true,
+  },
+  {
+    id: 3,
+    name: 'Christian',
+    born: new Date('1990-01-01T12:00:00.000Z'),
+    girlfriends: { wife: {} },
+    isActive: false,
+  },
+  {
+    id: 4,
+    name: 'Emil',
+    girlfriends: [
+      { name: 'fanny', hotness: 10 },
+      { name: 'eve', hotness: 1000 },
+    ],
+    bikes: [
+      { bike: { brand: "trek", wheels: ["front", "back"] } },
+      { bike: { brand: "unicycle", wheels: ["front"] } },
+    ],
+    currentBike: [{ brand: "trek", wheels: ["front", "back"] }],
+    born: new Date('1982-01-01T12:00:00.000Z'),
+  },
+  {
+    id: 5,
+    name: 'PG',
+    girlfriends: [{ name: 'Hanna', hotness: 200 }],
+    born: new Date('1989-01-01T12:00:00.000Z'),
+  },
 ];
 
 var collectionWithNull = [
@@ -179,6 +216,12 @@ describe('Kuery', function () {
   });
   it('should return correct element for single elemMatch query', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10 } } });
+    q.find(collection).length.should.equal(1);
+  });
+  it("should return correct element for single elemMatch query 2 objects deep", function () {
+    var q = new Kuery({
+      "bikes.bike": { $elemMatch: { brand: "trek" } },
+    });
     q.find(collection).length.should.equal(1);
   });
   it('should return correct element for multipart elemMatch query', function () {

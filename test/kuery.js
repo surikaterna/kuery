@@ -34,8 +34,21 @@ var collection = [
       { name: 'eve', hotness: 1000 },
     ],
     bikes: [
-      { bike: { brand: "trek", wheels: ["front", "back"] } },
-      { bike: { brand: "unicycle", wheels: ["front"] } },
+      {
+        bike: {
+          brand: "trek",
+          wheels: [
+            { position: "front", type: "carbon" },
+            { position: "back", type: "carbon" },
+          ],
+        },
+      },
+      {
+        bike: {
+          brand: "unicycle",
+          wheels: [{ position: "front", type: "aluminum" }],
+        },
+      },
     ],
     currentBike: [{ brand: "trek", wheels: ["front", "back"] }],
     born: new Date('1982-01-01T12:00:00.000Z'),
@@ -218,11 +231,23 @@ describe('Kuery', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10 } } });
     q.find(collection).length.should.equal(1);
   });
-  it("should return correct element for single elemMatch query 2 objects deep", function () {
+  it("should not return element when using $elemMatch on an object property", function () {
     var q = new Kuery({
       "bikes.bike": { $elemMatch: { brand: "trek" } },
     });
+    q.find(collection).length.should.equal(0);
+  });
+  it("should return correct element when using $elemMatch on a nested array property", function () {
+    var q = new Kuery({
+      "bikes.bike.wheels": { $elemMatch: { position: "front" } },
+    });
     q.find(collection).length.should.equal(1);
+  });
+  it("should not return any element when $elemMatch is not matching on nested array property", function () {
+    var q = new Kuery({
+      "bikes.bike.wheels": { $elemMatch: { position: "middle" } },
+    });
+    q.find(collection).length.should.equal(0);
   });
   it('should return correct element for multipart elemMatch query', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10, name: 'fanny' } } });

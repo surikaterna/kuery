@@ -1,4 +1,5 @@
 var _ = require('lodash/fp');
+var hi = require('../lib/hidash');
 var Kuery = require('..');
 var should = require('should');
 
@@ -235,6 +236,7 @@ describe('Kuery', function () {
     var q = new Kuery({
       "bikes.bike": { $elemMatch: { brand: "trek" } },
     });
+    console.log('AA', q.find(collection));
     q.find(collection).length.should.equal(0);
   });
   it("should return correct element when using $elemMatch on a nested array property", function () {

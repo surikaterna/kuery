@@ -39,7 +39,7 @@ var collection = [
           brand: "trek",
           wheels: [
             { position: "front", type: "carbon" },
-            { position: "back", type: "carbon" },
+            { position: "back", type: "aluminum" },
           ],
         },
       },
@@ -242,6 +242,28 @@ describe('Kuery', function () {
       "bikes.bike.wheels": { $elemMatch: { position: "front" } },
     });
     q.find(collection).length.should.equal(1);
+  });
+  it("should return correct element when using $elemMatch with multiple conditions on a nested array property", function () {
+    var q = new Kuery({
+      "bikes.bike.wheels": {
+        "$elemMatch": {
+          position: "front",
+          type: "carbon"
+        }
+      }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it("should not return any element when elemMatch does not match on the same item in the array", function () {
+    var q = new Kuery({
+      "bikes.bike.wheels": {
+        "$elemMatch": {
+          position: "back",
+          type: "carbon"
+        }
+      }
+    });
+    q.find(collection).length.should.equal(0);
   });
   it("should not return any element when $elemMatch is not matching on nested array property", function () {
     var q = new Kuery({

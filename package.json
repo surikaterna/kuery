@@ -20,13 +20,16 @@
   "bugs": {
     "url": "https://github.com/surikaterna/kuery/issues"
   },
+  "prettier": "prettier-config-surikaterna",
   "devDependencies": {
+    "eslint": "^2.5.3",
+    "eslint-config-surikat": "^1.1.0",
     "istanbul": "^0.3.2",
     "jshint": "^2.5.10",
     "mocha": "^2.0.1",
-    "should": "^4.1.0",
-    "eslint": "^2.5.3",
-    "eslint-config-surikat": "^1.1.0"
+    "prettier": "^2.7.1",
+    "prettier-config-surikaterna": "^1.0.1",
+    "should": "^4.1.0"
   },
   "homepage": "https://github.com/surikaterna/kuery#readme",
   "dependencies": {

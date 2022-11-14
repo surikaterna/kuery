@@ -33,6 +33,26 @@ var collection = [
       { name: 'fanny', hotness: 10 },
       { name: 'eve', hotness: 1000 }
     ],
+    parts: [
+      { 
+        name: "part1",
+        parts: []
+      },
+      { 
+        name: "part2",
+        parts: [
+          {
+            name: "part2.sub1"
+          },
+          {
+            name: "part2.sub2"
+          }
+        ]
+      },
+      { 
+        name: "part3"
+      }
+   ],
     bikes: [
       {
         bike: {
@@ -232,6 +252,17 @@ describe('Kuery', function () {
   it('should return correct element when using $elemMatch on a nested array property', function () {
     var q = new Kuery({
       'bikes.bike.wheels': { $elemMatch: { position: 'front' } }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct element when using $elemMatch on nested optional array property ', function () {
+    // item name: "part3" missing sub parts array making testcase to fail
+    var q = new Kuery({
+      'parts.parts': {
+        $elemMatch: {
+          name: 'part2.sub2'
+        }
+      }
     });
     q.find(collection).length.should.equal(1);
   });

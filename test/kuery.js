@@ -257,10 +257,10 @@ describe('Kuery', function () {
   });
   it('should return correct element when using $elemMatch on nested optional array property ', function () {
     // item name: "part3" missing sub parts array making testcase to fail
-    var q = new Kuery({
+    var q = new Kuery( {
       'parts.parts': {
         $elemMatch: {
-          name: 'part2.sub2'
+          name: { $eq: 'part2.sub1' }
         }
       }
     });

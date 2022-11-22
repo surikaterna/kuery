@@ -1,19 +1,87 @@
 var _ = require('lodash/fp');
+var hi = require('../lib/hidash');
 var Kuery = require('..');
 var should = require('should');
 
-
 var collection = [
-  { id: 1, name: 'Andreas', address: { street: 'Bellmansgatan' }, born: new Date('1980-01-01T12:00:00.000Z'), isActive: true },
-  { id: 2, name: 'Sven', address: {}, girlfriends: [{ wife: {} }], born: new Date('1989-01-01T12:00:00.000Z'), isActive: true },
-  { id: 3, name: 'Christian', born: new Date('1990-01-01T12:00:00.000Z'), girlfriends: { wife: {} }, isActive: false },
-  { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve', hotness: 1000 }], born: new Date('1982-01-01T12:00:00.000Z') },
-  { id: 5, name: 'PG', girlfriends: [{ name: 'Hanna', hotness: 200 }], born: new Date('1989-01-01T12:00:00.000Z') }
+  {
+    id: 1,
+    name: 'Andreas',
+    address: { street: 'Bellmansgatan' },
+    born: new Date('1980-01-01T12:00:00.000Z'),
+    isActive: true
+  },
+  {
+    id: 2,
+    name: 'Sven',
+    address: {},
+    girlfriends: [{ wife: {} }],
+    born: new Date('1989-01-01T12:00:00.000Z'),
+    isActive: true
+  },
+  {
+    id: 3,
+    name: 'Christian',
+    born: new Date('1990-01-01T12:00:00.000Z'),
+    girlfriends: { wife: {} },
+    isActive: false
+  },
+  {
+    id: 4,
+    name: 'Emil',
+    girlfriends: [
+      { name: 'fanny', hotness: 10 },
+      { name: 'eve', hotness: 1000 }
+    ],
+    parts: [
+      { 
+        name: "part1",
+        parts: []
+      },
+      { 
+        name: "part2",
+        parts: [
+          {
+            name: "part2.sub1"
+          },
+          {
+            name: "part2.sub2"
+          }
+        ]
+      },
+      { 
+        name: "part3"
+      }
+   ],
+    bikes: [
+      {
+        bike: {
+          brand: 'trek',
+          wheels: [
+            { position: 'front', type: 'carbon' },
+            { position: 'back', type: 'aluminum' }
+          ]
+        }
+      },
+      {
+        bike: {
+          brand: 'unicycle',
+          wheels: [{ position: 'front', type: 'aluminum' }]
+        }
+      }
+    ],
+    currentBike: [{ brand: 'trek', wheels: ['front', 'back'] }],
+    born: new Date('1982-01-01T12:00:00.000Z')
+  },
+  {
+    id: 5,
+    name: 'PG',
+    girlfriends: [{ name: 'Hanna', hotness: 200 }],
+    born: new Date('1989-01-01T12:00:00.000Z')
+  }
 ];
 
-var collectionWithNull = [
-  { id: 6, name: 'KE', girlfriends: null }
-];
+var collectionWithNull = [{ id: 6, name: 'KE', girlfriends: null }];
 
 describe('Kuery', function () {
   it('should return 0 for empty collection', function () {
@@ -124,19 +192,13 @@ describe('Kuery', function () {
   });
   it('should return correct elements for $or query', function () {
     var q = new Kuery({
-      $or: [
-        { name: /andr.*/i }
-        , { name: /emil.*/i }
-      ]
+      $or: [{ name: /andr.*/i }, { name: /emil.*/i }]
     });
     q.find(collection).length.should.equal(2);
   });
   it('should return correct elements for $or query when both sides return same element', function () {
     var q = new Kuery({
-      $or: [
-        { name: /andr.*/i },
-        { name: /andr.*/i }
-      ]
+      $or: [{ name: /andr.*/i }, { name: /andr.*/i }]
     });
     q.find(collection).length.should.equal(1);
   });
@@ -181,6 +243,57 @@ describe('Kuery', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10 } } });
     q.find(collection).length.should.equal(1);
   });
+  it('should not return element when using $elemMatch on an object property', function () {
+    var q = new Kuery({
+      'bikes.bike': { $elemMatch: { brand: 'trek' } }
+    });
+    q.find(collection).length.should.equal(0);
+  });
+  it('should return correct element when using $elemMatch on a nested array property', function () {
+    var q = new Kuery({
+      'bikes.bike.wheels': { $elemMatch: { position: 'front' } }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct element when using $elemMatch on nested optional array property ', function () {
+    // item name: "part3" missing sub parts array making testcase to fail
+    var q = new Kuery( {
+      'parts.parts': {
+        $elemMatch: {
+          name: { $eq: 'part2.sub1' }
+        }
+      }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct element when using $elemMatch with multiple conditions on a nested array property', function () {
+    var q = new Kuery({
+      'bikes.bike.wheels': {
+        $elemMatch: {
+          position: 'front',
+          type: 'carbon'
+        }
+      }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should not return any element when elemMatch does not match on the same item in the array', function () {
+    var q = new Kuery({
+      'bikes.bike.wheels': {
+        $elemMatch: {
+          position: 'back',
+          type: 'carbon'
+        }
+      }
+    });
+    q.find(collection).length.should.equal(0);
+  });
+  it('should not return any element when $elemMatch is not matching on nested array property', function () {
+    var q = new Kuery({
+      'bikes.bike.wheels': { $elemMatch: { position: 'middle' } }
+    });
+    q.find(collection).length.should.equal(0);
+  });
   it('should return correct element for multipart elemMatch query', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10, name: 'fanny' } } });
     q.find(collection).length.should.equal(1);
@@ -211,8 +324,8 @@ describe('Kuery', function () {
     var q = new Kuery({ 'girlfriends.wife': { $exists: true } });
     q.find(collection).length.should.equal(2);
   });
-  it("should return elements where given element does not exists deeply", function () {
-    var q = new Kuery({ "address.zipcode": { $exists: false } });
+  it('should return elements where given element does not exists deeply', function () {
+    var q = new Kuery({ 'address.zipcode': { $exists: false } });
     q.find(collection).length.should.equal(5);
   });
   it('should return elements when query for boolean', function () {
@@ -231,5 +344,4 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
-
 });

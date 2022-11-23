@@ -231,5 +231,22 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
-
+  it('$and with nested $or and $regex should return one dude', function () {
+    var q = new Kuery({
+      $and: [
+        {
+          $or: [
+            { 'girlfriends.name': { $regex: '^anny' } }
+          ]
+        }
+      ]
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('$regex should return one dude', function () {
+    var q = new Kuery({
+      'girlfriends.name': { $regex: '^anny' }
+    });
+    q.find(collection).length.should.equal(1);
+  });
 });

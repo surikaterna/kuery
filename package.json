@@ -1,6 +1,6 @@
 {
   "name": "kuery",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,15 +21,15 @@
     "url": "https://github.com/surikaterna/kuery/issues"
   },
   "devDependencies": {
+    "eslint": "^2.5.3",
+    "eslint-config-surikat": "^1.1.0",
     "istanbul": "^0.3.2",
     "jshint": "^2.5.10",
     "mocha": "^2.0.1",
-    "should": "^4.1.0",
-    "eslint": "^2.5.3",
-    "eslint-config-surikat": "^1.1.0"
+    "should": "^4.1.0"
   },
   "homepage": "https://github.com/surikaterna/kuery#readme",
   "dependencies": {
-    "lodash": "^4.8.2"
+    "lodash": "^4.17.21"
   }
 }

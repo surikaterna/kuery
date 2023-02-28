@@ -122,6 +122,14 @@ describe('Kuery', function () {
     var q = new Kuery({ name: /andr.*/i });
     q.find(collection).length.should.equal(1);
   });
+  it('should return correct elements for negating $elemMatch query', function () {
+    var q = new Kuery({ girlfriends: { $not: { $elemMatch: { hotness: 200 } } } });
+    q.find(collection).length.should.equal(4);
+  });
+  it('should return correct elements for negating $elemMatch regex query', function () {
+    var q = new Kuery({ girlfriends: { $not: { $elemMatch: { name: /nny$/i } } } });
+    q.find(collection).length.should.equal(4);
+  });
   it('should return correct elements for $or query', function () {
     var q = new Kuery({
       $or: [

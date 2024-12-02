@@ -31,28 +31,35 @@ var collection = [
     name: 'Emil',
     girlfriends: [
       { name: 'fanny', hotness: 10 },
-      { name: 'eve', hotness: 1000 }
+      {
+        name: 'eve',
+        hotness: 1000,
+        boyfriends: [
+          { id: 4, name: 'Emil', girlfriends: [{ name: 'fanny', hotness: 10 }, { name: 'eve' }] },
+          { id: 2, name: 'Sven' }
+        ]
+      }
     ],
     parts: [
-      { 
-        name: "part1",
+      {
+        name: 'part1',
         parts: []
       },
-      { 
-        name: "part2",
+      {
+        name: 'part2',
         parts: [
           {
-            name: "part2.sub1"
+            name: 'part2.sub1'
           },
           {
-            name: "part2.sub2"
+            name: 'part2.sub2'
           }
         ]
       },
-      { 
-        name: "part3"
+      {
+        name: 'part3'
       }
-   ],
+    ],
     bikes: [
       {
         bike: {
@@ -264,7 +271,7 @@ describe('Kuery', function () {
     q.find(collection).length.should.equal(1);
   });
   it('should return correct element when using $elemMatch on nested optional array property ', function () {
-    var q = new Kuery( {
+    var q = new Kuery({
       'parts.parts': {
         $elemMatch: {
           name: { $eq: 'part2.sub1' }
@@ -314,6 +321,18 @@ describe('Kuery', function () {
   it('should return no element for multipart elemMatch query matching different array elements', function () {
     var q = new Kuery({ girlfriends: { $elemMatch: { hotness: 10, name: 'eve' } } });
     q.find(collection).length.should.equal(0);
+  });
+  it('should return correct elements for double nested array elemMatch query', function () {
+    var q = new Kuery({ 'girlfriends.boyfriends': { $elemMatch: { id: 2, name: 'Sven' } } });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct elements for triple nested array elemMatch query', function () {
+    var q = new Kuery({ 'girlfriends.boyfriends.girlfriends': { $elemMatch: { hotness: 10, name: 'fanny' } } });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct elements for negated triple nested array elemMatch query', function () {
+    var q = new Kuery({ 'girlfriends.boyfriends.girlfriends': { $not: { $elemMatch: { hotness: 10, name: 'fanny' } } } });
+    q.find(collection).length.should.equal(4);
   });
   it('should return correct elements for property with path $regexp with arrays', function () {
     var q = new Kuery({ 'girlfriends.name': { $regex: 'ev.*', $options: 'i' } });

@@ -264,7 +264,6 @@ describe('Kuery', function () {
     q.find(collection).length.should.equal(1);
   });
   it('should return correct element when using $elemMatch on nested optional array property ', function () {
-    // item name: "part3" missing sub parts array making testcase to fail
     var q = new Kuery( {
       'parts.parts': {
         $elemMatch: {

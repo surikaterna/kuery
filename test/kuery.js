@@ -24,7 +24,25 @@ var collection = [
     name: 'Christian',
     born: new Date('1990-01-01T12:00:00.000Z'),
     girlfriends: { wife: {} },
-    isActive: false
+    isActive: false,
+    parts: [
+      {
+        name: 'part1',
+        parts: []
+      },
+      {
+        name: 'part2',
+        parts: [
+          {
+            name: 'part2.sub1'
+          }
+        ]
+      },
+      {
+        name: 'part3',
+        parts: ''
+      }
+    ]
   },
   {
     id: 4,
@@ -84,7 +102,29 @@ var collection = [
     id: 5,
     name: 'PG',
     girlfriends: [{ name: 'Hanna', hotness: 200 }],
-    born: new Date('1989-01-01T12:00:00.000Z')
+    born: new Date('1989-01-01T12:00:00.000Z'),
+    parts: [
+      {
+        name: 'part1',
+        parts: []
+      },
+      {
+        name: 'part2',
+        parts: [
+          {
+            name: 'part2.sub1'
+          }
+        ]
+      },
+      {
+        name: 'part3',
+        parts: 'TODO'
+      },
+      {
+        name: 'part3',
+        parts: {}
+      }
+    ]
   }
 ];
 
@@ -270,8 +310,31 @@ describe('Kuery', function () {
     });
     q.find(collection).length.should.equal(1);
   });
-  it('should return correct element when using $elemMatch on nested optional array property ', function () {
+  it('should return correct element when using elemMatch on nested optional array property', function () {
     var q = new Kuery({
+      id: 4,
+      'parts.parts': {
+        $elemMatch: {
+          name: { $eq: 'part2.sub1' }
+        }
+      }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct element when using $elemMatch on nested array with differing property types', function () {
+    var q = new Kuery({
+      id: 5,
+      'parts.parts': {
+        $elemMatch: {
+          name: { $eq: 'part2.sub1' }
+        }
+      }
+    });
+    q.find(collection).length.should.equal(1);
+  });
+  it('should return correct element when using $elemMatch on nested array where one type is empty string', function () {
+    var q = new Kuery({
+      id: 3,
       'parts.parts': {
         $elemMatch: {
           name: { $eq: 'part2.sub1' }

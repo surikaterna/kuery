@@ -1,0 +1,14 @@
+import { KueryError } from "./errors.js";
+
+/** Set of path segment names that are blocked to prevent prototype pollution. */
+export const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+/** Throws KueryError if a path segment could cause prototype pollution. */
+export function assertSafeSegment(segment: string): void {
+  if (DANGEROUS_KEYS.has(segment)) {
+    throw new KueryError(
+      "PREDICATE_PROTOTYPE_POLLUTION",
+      `Path segment "${segment}" is not allowed — potential prototype pollution`,
+    );
+  }
+}

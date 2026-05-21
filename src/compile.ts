@@ -32,6 +32,12 @@ function makePath(field: string): ExprNode {
   return { kind: "path", path: field };
 }
 
+function normalizeLiteralValue(value: unknown): unknown {
+  if (value instanceof Date) return value.getTime();
+  if (Array.isArray(value)) return value.map(normalizeLiteralValue);
+  return value;
+}
+
 function makeLiteral(value: unknown): ExprNode {
   if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     return { kind: "literal", value };
@@ -40,7 +46,7 @@ function makeLiteral(value: unknown): ExprNode {
     return { kind: "literal", value: value.getTime() };
   }
   if (Array.isArray(value)) {
-    return { kind: "literal", value };
+    return { kind: "literal", value: value.map(normalizeLiteralValue) };
   }
   throw new KueryError("KUERY_COMPILE_UNSUPPORTED_LITERAL", `Unsupported literal value: ${String(value)}`);
 }

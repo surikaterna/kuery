@@ -3,6 +3,7 @@ import type { ExprNode } from "../ast.js";
 import { compile } from "../compile.js";
 import { KueryError } from "../errors.js";
 import { evaluate } from "../evaluator.js";
+import { compileFilterFromAst } from "../filter-compiler.js";
 import { assertSafeSegment } from "../safe-path.js";
 
 function makeScope(
@@ -95,5 +96,15 @@ describe("recursion depth guard", () => {
     const node = buildDeepAst(10);
     const scope = makeScope();
     expect(() => evaluate(node, scope, { maxDepth: 5 })).toThrow("exceeded maximum depth");
+  });
+});
+
+describe("compileFilterFromAst maxDepth", () => {
+  it("enforces maxDepth", () => {
+    let ast: ExprNode = { kind: "literal", value: true };
+    for (let i = 0; i < 20; i++) {
+      ast = { kind: "op", op: "$not", args: [ast] };
+    }
+    expect(() => compileFilterFromAst(ast, { maxDepth: 10 })).toThrow("exceeded maximum depth");
   });
 });

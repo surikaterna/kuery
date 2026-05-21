@@ -200,4 +200,17 @@ describe("regex cache LRU", () => {
     clearRegexCache();
     expect(getRegexCacheSize()).toBe(0);
   });
+
+  test("$exists: true matches nested field explicitly set to undefined", () => {
+    const fn = compileFilter({ "nested.key": { $exists: true } });
+    expect(fn({ nested: { key: undefined } })).toBe(true);
+    expect(fn({ nested: {} })).toBe(false);
+  });
+
+  test("$in with Date values compares by epoch", () => {
+    const target = new Date("2020-06-15");
+    const fn = compileFilter({ born: { $in: [new Date("2020-06-15"), new Date("2021-01-01")] } });
+    expect(fn({ born: target })).toBe(true);
+    expect(fn({ born: new Date("2019-01-01") })).toBe(false);
+  });
 });

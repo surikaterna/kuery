@@ -42,8 +42,23 @@ function compilePathWithMissing(node: ExprNode & { kind: "path" }): ValScopeFn {
     return (scope) => (key in scope ? scope[key] : PATH_MISSING);
   }
   return (scope) => {
-    const result = collectPath(scope, segments);
-    return result === undefined ? PATH_MISSING : result;
+    let current: unknown = scope;
+    for (let i = 0; i < segments.length; i++) {
+      if (current === null || current === undefined || typeof current !== "object") {
+        return PATH_MISSING;
+      }
+      if (Array.isArray(current)) {
+        // Fall back to collectPath for array traversal; use PATH_MISSING only if truly absent
+        const result = collectPath(scope, segments);
+        return result === undefined ? PATH_MISSING : result;
+      }
+      const seg = segments[i]!;
+      if (!(seg in (current as Record<string, unknown>))) {
+        return PATH_MISSING;
+      }
+      current = (current as Record<string, unknown>)[seg];
+    }
+    return current;
   };
 }
 
@@ -131,6 +146,9 @@ export function compileFilter(query: Query, options?: CompileFilterOptions): Fil
 
 /** Compile an existing AST to an optimized native filter function. */
 export function compileFilterFromAst(ast: ExprNode, options?: CompileFilterOptions): FilterFn {
+  if (options?.maxDepth !== undefined) {
+    assertAstDepth(ast, options.maxDepth);
+  }
   const inner = compileNode(ast, options?.registry);
   return (doc) => Boolean(inner(doc as Record<string, unknown>));
 }

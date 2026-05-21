@@ -147,8 +147,11 @@ export function compileInclusion(args: readonly ExprNode[], negate: boolean): Bo
   if (listNode.kind === "literal" && Array.isArray(listNode.value)) {
     const set = new Set(listNode.value as unknown[]);
     return (scope) => {
-      const v = resolveValue(scope);
-      const found = Array.isArray(v) ? v.some((el) => set.has(el)) : set.has(v);
+      const raw = resolveValue(scope);
+      const v = normalizeComparable(raw);
+      const found = Array.isArray(raw)
+        ? (raw as unknown[]).some((el) => set.has(normalizeComparable(el)))
+        : set.has(v);
       return negate ? !found : found;
     };
   }

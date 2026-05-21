@@ -7,7 +7,7 @@ export { type FindOptions, find } from "./collection/find.js";
 export { findOne } from "./collection/find-one.js";
 // Compilation
 // Backward compatibility
-export { compile, type Query } from "./compile.js";
+export { compile, compileShorthand, type Query, type ShorthandQuery } from "./compile.js";
 export { KueryError, type KueryErrorCode } from "./errors.js";
 // Evaluation (thin facade)
 export { type EvaluateOptions, evaluate } from "./evaluator.js";

@@ -186,4 +186,12 @@ export function compile(query: Query): ExprNode {
   return { kind: "op", op: "$and", args: nodes };
 }
 
+/**
+ * Alias for `compile`. Exists for backward compatibility with consumers
+ * that used the predicate package's shorthand API.
+ * @deprecated Use `compile` directly.
+ */
+export const compileShorthand = compile;
 
+/** @deprecated Use `Query` directly. */
+export type ShorthandQuery = Query;

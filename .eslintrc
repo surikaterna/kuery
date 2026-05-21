@@ -1,6 +1,0 @@
-{
-    "extends": "surikat/es5",
-    "env": {
-        "node": true
-    }
-}

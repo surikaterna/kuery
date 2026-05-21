@@ -14,7 +14,7 @@ import {
   type ValScopeFn,
 } from "./filter-operators.js";
 import type { OperatorRegistry } from "./operators.js";
-import { collectPath, PATH_MISSING, validateAndSplitPath } from "./path-utils.js";
+import { collectPath, collectPathWithMissing, PATH_MISSING, validateAndSplitPath } from "./path-utils.js";
 import type { TypedQuery } from "./typed-query.js";
 
 /** Kuery function that tests a document against a compiled query. */
@@ -48,9 +48,8 @@ function compilePathWithMissing(node: ExprNode & { kind: "path" }): ValScopeFn {
         return PATH_MISSING;
       }
       if (Array.isArray(current)) {
-        // Fall back to collectPath for array traversal; use PATH_MISSING only if truly absent
-        const result = collectPath(scope, segments);
-        return result === undefined ? PATH_MISSING : result;
+        // Fall back to collectPathWithMissing for array traversal with proper $exists semantics
+        return collectPathWithMissing(scope, segments);
       }
       const seg = segments[i]!;
       if (!(seg in (current as Record<string, unknown>))) {

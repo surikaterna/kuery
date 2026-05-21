@@ -113,6 +113,12 @@ function compileFieldOperators(field: string, operators: Record<string, unknown>
       continue;
     }
     if (op === "$size") {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new KueryError(
+          "KUERY_PARSE_INVALID_ARGUMENTS",
+          `$size requires a finite number, got: ${typeof value}`,
+        );
+      }
       nodes.push({ kind: "op", op: "$size", args: [makePath(field), makeLiteral(value)] });
       continue;
     }

@@ -58,18 +58,61 @@ function collectPathSlow(root: unknown, segments: readonly string[]): unknown {
       if (Array.isArray(t)) {
         for (const el of t) {
           if (el !== null && el !== undefined && typeof el === "object") {
-            const v = (el as Record<string, unknown>)[seg];
-            if (v !== undefined) next.push(v);
+            if (seg in (el as Record<string, unknown>)) {
+              next.push((el as Record<string, unknown>)[seg]);
+            }
           }
         }
       } else {
-        const v = (t as Record<string, unknown>)[seg];
-        if (v !== undefined) next.push(v);
+        if (seg in (t as Record<string, unknown>)) {
+          next.push((t as Record<string, unknown>)[seg]);
+        }
       }
     }
     targets = next;
   }
   if (targets.length === 0) return undefined;
+  if (targets.length === 1) return targets[0];
+  return targets;
+}
+
+/**
+ * Like collectPath but returns PATH_MISSING when the path is truly absent.
+ * Used by compilePathWithMissing for $exists semantics during array traversal.
+ */
+export function collectPathWithMissing(root: unknown, segments: readonly string[]): unknown {
+  return collectPathSlowWithMissing(root, segments);
+}
+
+function collectPathSlowWithMissing(root: unknown, segments: readonly string[]): unknown {
+  let targets: unknown[] = [root];
+  let foundAny = false;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i]!;
+    const next: unknown[] = [];
+    for (const t of targets) {
+      if (t === null || t === undefined || typeof t !== "object") continue;
+      if (Array.isArray(t)) {
+        for (const el of t) {
+          if (el !== null && el !== undefined && typeof el === "object") {
+            if (seg in (el as Record<string, unknown>)) {
+              next.push((el as Record<string, unknown>)[seg]);
+              foundAny = true;
+            }
+          }
+        }
+      } else {
+        if (seg in (t as Record<string, unknown>)) {
+          next.push((t as Record<string, unknown>)[seg]);
+          foundAny = true;
+        }
+      }
+    }
+    targets = next;
+    if (i < segments.length - 1) foundAny = false;
+  }
+  if (!foundAny) return PATH_MISSING;
+  if (targets.length === 0) return PATH_MISSING;
   if (targets.length === 1) return targets[0];
   return targets;
 }

@@ -213,4 +213,24 @@ describe("regex cache LRU", () => {
     expect(fn({ born: target })).toBe(true);
     expect(fn({ born: new Date("2019-01-01") })).toBe(false);
   });
+
+  test("$size with non-number value throws at compile time", () => {
+    expect(() => compileFilter({ tags: { $size: "2" as unknown as number } })).toThrow(/\$size requires/);
+    expect(() => compileFilter({ tags: { $size: null as unknown as number } })).toThrow(/\$size requires/);
+    expect(() => compileFilter({ tags: { $size: Infinity } })).toThrow(/\$size requires/);
+  });
+
+  test("$size with valid number works", () => {
+    const fn = compileFilter({ tags: { $size: 2 } });
+    expect(fn({ tags: ["a", "b"] })).toBe(true);
+    expect(fn({ tags: ["a"] })).toBe(false);
+  });
+
+  test("$exists: true matches array element with key set to undefined", () => {
+    const fn = compileFilter({ "items.value": { $exists: true } });
+    // Array element has the key but value is undefined
+    expect(fn({ items: [{ value: undefined }, { other: 1 }] })).toBe(true);
+    // No array element has the key at all
+    expect(fn({ items: [{ other: 1 }, { other: 2 }] })).toBe(false);
+  });
 });

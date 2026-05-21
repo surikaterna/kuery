@@ -163,7 +163,12 @@ export function compileInclusion(args: readonly ExprNode[], negate: boolean): Bo
       throw new KueryError("KUERY_TYPE_MISMATCH", `${opName} requires second argument to be an array`);
     }
     const v = resolveValue(scope);
-    const found = Array.isArray(v) ? v.some((el) => arr.includes(el)) : arr.includes(v);
+    const found = Array.isArray(v)
+      ? v.some((el) => {
+          const nel = normalizeComparable(el);
+          return arr.some((item) => normalizeComparable(item) === nel);
+        })
+      : arr.some((item) => normalizeComparable(item) === normalizeComparable(v));
     return negate ? !found : found;
   };
 }
@@ -286,6 +291,8 @@ export function compileSize(args: readonly ExprNode[]): BoolScopeFn {
   return (scope) => {
     const v = resolveValue(scope);
     if (!Array.isArray(v)) return false;
-    return v.length === resolveSize(scope);
+    const size = resolveSize(scope);
+    if (typeof size !== "number") return false;
+    return v.length === size;
   };
 }

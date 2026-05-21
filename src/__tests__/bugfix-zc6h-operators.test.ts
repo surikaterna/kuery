@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { ExprNode } from "../ast.js";
+import { compileFilter } from "../filter-compiler.js";
 import { evaluate, OperatorRegistry } from "../index.js";
 
 describe("zc6h: custom operator registry wiring", () => {
@@ -45,5 +46,22 @@ describe("zc6h: custom operator registry wiring", () => {
     };
     const result = evaluate(node, {});
     expect(result).toBe(true);
+  });
+
+  test("custom operator works in query object via registry", () => {
+    const registry = new OperatorRegistry();
+    registry.register(
+      { name: "$between", arity: 2 },
+      (args) => {
+        const [value, range] = args;
+        const [min, max] = range as [number, number];
+        return typeof value === "number" && value >= min && value <= max;
+      },
+    );
+
+    const fn = compileFilter({ score: { $between: [10, 50] } }, { registry });
+    expect(fn({ score: 25 })).toBe(true);
+    expect(fn({ score: 5 })).toBe(false);
+    expect(fn({ score: 75 })).toBe(false);
   });
 });

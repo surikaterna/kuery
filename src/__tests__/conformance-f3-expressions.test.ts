@@ -121,8 +121,13 @@ describe("F3: Compiler correctness", () => {
     }
   });
 
-  it("rejects unknown operators in field expressions", () => {
-    expect(() => compile({ x: { $bogus: 1 } })).toThrow("Unknown operator");
+  it("defers unknown $-prefixed operators to runtime (generic op node)", () => {
+    const ast = compile({ x: { $bogus: 1 } });
+    expect(ast).toEqual({
+      kind: "op",
+      op: "$bogus",
+      args: [{ kind: "path", path: "x" }, { kind: "literal", value: 1 }],
+    });
   });
 
   it("empty query compiles to literal true", () => {

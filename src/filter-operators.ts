@@ -261,7 +261,7 @@ export function compileAll(args: readonly ExprNode[]): BoolScopeFn {
     return (scope) => {
       const v = resolveValue(scope);
       if (!Array.isArray(v)) return false;
-      return required.every((item) => v.includes(item));
+      return required.every((item) => v.some((el) => normalizeComparable(el) === item));
     };
   }
   const resolveList = _compileNode(listNode);
@@ -272,7 +272,7 @@ export function compileAll(args: readonly ExprNode[]): BoolScopeFn {
     if (!Array.isArray(required)) {
       throw new KueryError("KUERY_TYPE_MISMATCH", "$all requires an array argument");
     }
-    return required.every((item) => v.includes(item));
+    return required.every((item) => v.some((el) => normalizeComparable(el) === item));
   };
 }
 

@@ -96,6 +96,11 @@ function compileFieldOperators(field: string, operators: Record<string, unknown>
     }
 
     if (!COMPARISON_OPS.has(op)) {
+      if (op.startsWith("$")) {
+        // Defer to filter-compiler where the registry can resolve custom operators
+        nodes.push({ kind: "op", op, args: [makePath(field), makeLiteral(value)] });
+        continue;
+      }
       throw new KueryError("KUERY_UNKNOWN_OPERATOR", `Unknown operator: ${op}`);
     }
     if (op === "$in" || op === "$nin") {

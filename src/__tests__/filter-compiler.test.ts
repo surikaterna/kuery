@@ -233,4 +233,10 @@ describe("regex cache LRU", () => {
     // No array element has the key at all
     expect(fn({ items: [{ other: 1 }, { other: 2 }] })).toBe(false);
   });
+
+  test("$all with Date values normalizes comparison", () => {
+    const fn = compileFilter({ dates: { $all: [new Date("2020-01-01"), new Date("2021-06-15")] } });
+    expect(fn({ dates: [new Date("2020-01-01"), new Date("2021-06-15"), new Date("2022-01-01")] })).toBe(true);
+    expect(fn({ dates: [new Date("2020-01-01")] })).toBe(false);
+  });
 });

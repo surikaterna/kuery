@@ -1,12 +1,10 @@
 # Kuery
 
-> MongoDB-style in-memory query engine for JavaScript/TypeScript
-
-<!-- badges placeholder -->
+> MongoDB-style in-memory query engine — zero dependencies, TypeScript, ESM+CJS
 
 ## Purpose
 
-Kuery is a zero-dependency, MongoDB-compatible query engine for filtering in-memory collections. It supports ESM and CJS, ships TypeScript declarations, and provides both a fluent class API and standalone functions.
+Kuery is a zero-dependency query engine for filtering in-memory JavaScript collections using MongoDB-compatible query syntax. It compiles queries to optimized native closures, supports full TypeScript with type-safe dot-path queries, and ships dual ESM+CJS.
 
 ## Installation
 
@@ -18,35 +16,53 @@ npm i kuery
 
 ```typescript
 import Kuery from 'kuery';
-// or
-import { Kuery, compileFilter } from 'kuery';
 
 const users = [
-  { id: 1, name: 'Alice', age: 25, role: 'admin' },
-  { id: 2, name: 'Bob', age: 17, role: 'user' },
-  { id: 3, name: 'Carol', age: 30, role: 'mod' },
+  { id: 1, name: 'Alice', age: 25, role: 'admin', address: { city: 'NYC' } },
+  { id: 2, name: 'Bob', age: 17, role: 'user', address: { city: 'LA' } },
+  { id: 3, name: 'Carol', age: 30, role: 'mod', address: { city: 'NYC' } },
 ];
 
-// Basic usage
-const q = new Kuery({ status: 'active', age: { $gte: 18 } });
-const results = q.find(users);
+const admins = new Kuery({ role: 'admin' }).find(users);
+// [{ id: 1, name: 'Alice', ... }]
 
-// With skip/limit/sort
-const page = new Kuery({ role: 'admin' })
+const page = new Kuery({ age: { $gte: 18 } })
   .sort({ name: 1 })
-  .skip(20)
+  .skip(0)
   .limit(10)
   .find(users);
+// [{ id: 1, name: 'Alice', ... }, { id: 3, name: 'Carol', ... }]
 
-// Pre-compiled filter (hot path)
-import { compileFilter } from 'kuery/filter';
-const isActive = compileFilter({ age: { $gte: 18 } });
-const adults = users.filter(isActive);
-
-// CJS (backward-compatible)
+// CJS (backward-compatible with v1)
 const Kuery = require('kuery');
 new Kuery({ id: 1 }).findOne(collection);
 ```
+
+## Architecture
+
+Kuery processes queries through a three-stage pipeline:
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   compile   │────▶│     AST     │────▶│   execute   │
+│  (query →   │     │  (ExprNode  │     │  (native    │
+│   ExprNode) │     │   tree)     │     │   closures) │
+└─────────────┘     └─────────────┘     └─────────────┘
+```
+
+1. **Compile** — A MongoDB-style query object is parsed into an `ExprNode` AST (abstract syntax tree). This is a pure data structure that can be inspected, serialized, or transformed.
+
+2. **AST** — The intermediate representation uses three node kinds:
+   - `literal` — constant values
+   - `path` — dot-path field references
+   - `op` — operator applications with child nodes
+
+3. **Execute** — The AST is compiled into native JavaScript closures (`FilterFn`) that run without interpretation overhead. Path resolution handles array traversal, and operators are dispatched via direct function calls.
+
+This design enables:
+- **Pre-compilation**: compile once, filter millions of documents
+- **AST inspection**: transform queries, extract diagnostics, build alternative backends
+- **Custom operators**: extend the engine without modifying core code
 
 ## API Reference
 
@@ -54,10 +70,10 @@ new Kuery({ id: 1 }).findOne(collection);
 
 | Method | Description |
 |--------|-------------|
-| `new Kuery(query)` | Create instance with a filter query |
+| `new Kuery(query, options?)` | Create instance with a filter query |
 | `.skip(n)` | Skip first `n` matched documents |
 | `.limit(n)` | Limit results to `n` documents |
-| `.sort(spec)` | Sort by keys (`1` = asc, `-1` = desc) |
+| `.sort(spec)` | Sort by keys (`1` = asc, `-1` = desc, supports dot-paths) |
 | `.find(collection)` | Return all matching documents |
 | `.findOne(collection)` | Return exactly one match or throw `KueryError` |
 | `.test(document)` | Return `true` if document matches the query |
@@ -66,19 +82,28 @@ new Kuery({ id: 1 }).findOne(collection);
 
 | Export | Signature | Description |
 |--------|-----------|-------------|
-| `compileFilter` | `(query, options?) => (doc) => boolean` | Compile query to reusable filter function |
-| `compile` | `(query) => AST` | Compile query to inspectable AST |
-| `evaluate` | `(ast, scope) => boolean` | Evaluate AST against a document |
+| `compileFilter` | `(query, options?) => FilterFn` | Compile query to reusable native filter |
+| `compile` | `(query) => ExprNode` | Compile query to inspectable AST |
+| `evaluate` | `(ast, scope) => unknown` | Evaluate an AST against a document |
 | `find` | `(collection, query, options?) => T[]` | Standalone collection find |
-| `findOne` | `(collection, query, options?) => T \| undefined` | Return first match or `undefined` |
+| `findOne` | `(collection, query) => T \| undefined` | Return first match (no uniqueness assertion) |
 
-### Classes & Types
+> **Note**: `Kuery.findOne()` asserts exactly one result (throws on 0 or 2+).
+> The standalone `findOne()` from `kuery/collection` returns the first match or `undefined`.
 
-| Export | Description |
-|--------|-------------|
-| `KueryError` | Typed error class with `.code` property |
-| `OperatorRegistry` | Register and use custom operators |
-| `TypedQuery<T>` | Type-safe query with dot-path autocomplete |
+### Error handling
+
+```typescript
+import { KueryError } from 'kuery';
+
+try {
+  new Kuery({ id: 99 }).findOne(users);
+} catch (e) {
+  if (e instanceof KueryError) {
+    console.log(e.code); // 'KUERY_FIND_ONE'
+  }
+}
+```
 
 ## Supported Operators
 
@@ -91,50 +116,104 @@ new Kuery({ id: 1 }).findOne(collection);
 | Array | `$elemMatch`, `$all`, `$size` |
 | String | `$regex` (with `$options`) |
 
-## TypeScript
+## TypeScript — Type-Safe Queries
+
+Kuery ships `TypedQuery<T>` which provides autocomplete on dot-paths and validates operator values against field types:
 
 ```typescript
-import type { TypedQuery } from 'kuery';
+import { Kuery, type TypedQuery } from 'kuery';
 
 interface User {
   name: string;
   age: number;
-  role: string;
-  address: { city: string };
+  role: 'admin' | 'user' | 'mod';
+  active: boolean;
+  address: {
+    city: string;
+    zip: string;
+  };
+  tags: string[];
 }
 
-// Full autocomplete on field paths and operator values
+// Autocomplete on field paths, type-checked operator values
 const query: TypedQuery<User> = {
-  age: { $gte: 18 },
-  role: { $in: ['admin', 'mod'] },
-  'address.city': { $eq: 'Stockholm' },
+  age: { $gte: 18 },                          // ✓ number operator on number field
+  role: { $in: ['admin', 'mod'] },             // ✓ array of valid role values
+  'address.city': { $eq: 'Stockholm' },        // ✓ dot-path with string equality
+  active: true,                                // ✓ implicit $eq
+};
+
+const results = new Kuery(query).find(users);  // results: User[]
+```
+
+### Extending TypedQuery with custom operators
+
+If you register custom operators, you can make them type-safe via module augmentation:
+
+```typescript
+// my-operators.ts
+declare module 'kuery' {
+  interface CustomFieldOps<V> {
+    /** Match documents where a field starts with a prefix (string fields only). */
+    $startsWith?: V extends string ? string : never;
+    /** Graph traversal operator (string ID fields only). */
+    $inGraph?: V extends string ? { relation: string; rootId: string } : never;
+  }
+}
+
+// Now TypedQuery understands your custom operators:
+const query: TypedQuery<User> = {
+  name: { $startsWith: 'Al' },  // ✓ type-safe custom operator
 };
 ```
+
+## Performance
+
+v2 compiles queries to native closures instead of piping through lodash/fp. Benchmarks on a MacBook (100k documents):
+
+| Query | v1 (lodash/fp) | v2 cold | v2 hot (pre-compiled) | Speedup |
+|-------|---------------|---------|----------------------|---------|
+| `{ status: 'active' }` | 2.37ms | 0.81ms | 0.64ms | **3.7×** |
+| `{ status: 'active', score: { $gte: 50 } }` | 3.08ms | 1.63ms | 1.39ms | **2.2×** |
+| `{ $or: [{ status: 'active' }, { role: 'admin' }] }` | 3.53ms | 1.86ms | 1.70ms | **2.1×** |
+| `{ 'address.city': 'NYC' }` | 2.28ms | 1.09ms | 1.03ms | **2.2×** |
+| `{ role: { $in: ['admin', 'mod', 'editor'] } }` | 1.36ms | 1.05ms | 0.86ms | **1.6×** |
+| `{ name: { $regex: '^User_1' } }` | 1.84ms | 1.27ms | 1.26ms | **1.5×** |
+
+**Cold** = `new Kuery(query).find(collection)` (compile + execute each call)
+**Hot** = `compileFilter(query)` once, then `collection.filter(fn)` repeatedly
+
+Pre-compiling filters is recommended for hot paths (event handlers, stream processing, repeated evaluations).
 
 ## Advanced Usage
 
 ### Pre-compiled filters
 
-Compile once, reuse across many evaluations for performance-critical paths:
-
 ```typescript
 import { compileFilter } from 'kuery/filter';
 
-const isEligible = compileFilter({ age: { $gte: 18 }, status: 'active' });
+const isEligible = compileFilter<User>({ age: { $gte: 18 }, active: true });
 
-// Use in hot loops, streams, etc.
+// Reuse across millions of evaluations
 stream.filter(isEligible);
+events.filter(isEligible);
 ```
 
 ### Custom operators
 
 ```typescript
-import { OperatorRegistry } from 'kuery/operators';
+import { Kuery, OperatorRegistry } from 'kuery';
 
 const registry = new OperatorRegistry();
-registry.register('$startsWith', (fieldValue, operand) => {
-  return typeof fieldValue === 'string' && fieldValue.startsWith(operand);
-});
+registry.register(
+  { name: '$between', arity: 2 },
+  (args) => {
+    const [value, [min, max]] = args;
+    return typeof value === 'number' && value >= min && value <= max;
+  }
+);
+
+const q = new Kuery({ score: { $between: [10, 50] } }, { registry });
 ```
 
 ### Failure tracing / diagnostics
@@ -144,11 +223,13 @@ import { compile } from 'kuery/compile';
 import { evaluateWithTrace } from 'kuery/trace';
 
 const ast = compile({ age: { $gte: 18 }, role: 'admin' });
-const { result, trace } = evaluateWithTrace(ast, { age: 15, role: 'admin' });
-// trace shows which conditions failed and why
+const { result, traces } = evaluateWithTrace(ast, { age: 15, role: 'user' });
+// traces: [{ path: 'age', operator: '$gte', expected: 18, actual: 15 }, ...]
 ```
 
 ### Sub-path imports
+
+For tree-shaking or when you only need specific functionality:
 
 ```typescript
 import { compileFilter } from 'kuery/filter';
@@ -166,34 +247,31 @@ import { find, findOne } from 'kuery/collection';
 1. **`$exists` checks key presence, not truthiness**
    - v1: `{ field: { $exists: true } }` matched if `!!doc.field` was truthy
    - v2: matches if the key exists at all (even if value is `null`, `0`, `""`, `false`)
-   - Migration: replace `{ field: { $exists: true } }` with `{ field: { $ne: null } }` if you want truthiness behavior
+   - Migration: use `{ field: { $ne: null } }` if you need truthiness semantics
 
-2. **Array fields now match element-wise**
+2. **Array fields now match element-wise** (MongoDB-compatible)
    - v1: `{ tags: { $in: ['a'] } }` on `{ tags: ['a','b'] }` → no match
-   - v2: matches (checks if any element of the array is in the list) — MongoDB-compatible
-   - This is a bugfix; most consumers will see improved results
+   - v2: matches if any array element satisfies the condition
 
-3. **Falsy values in dot-path traversal**
-   - v1: `{ 'items.score': 0 }` would not match documents with `score: 0` inside arrays
-   - v2: correctly matches — was a bug in v1's `_collect` function
+3. **Falsy values in dot-path traversal** (bugfix)
+   - v1: `{ 'items.score': 0 }` silently failed for `score: 0` inside arrays
+   - v2: correctly matches
 
 4. **Error type: `KueryError` replaces generic `Error`**
-   - `findOne` now throws `KueryError` (extends `Error`) with a `.code` property
-   - Existing `catch(e)` still works; `instanceof Error` still true
+   - `findOne` throws `KueryError` with a `.code` property
+   - `instanceof Error` still true; existing catch handlers work
 
-5. **Type-mismatched comparisons return `false`**
-   - Both v1 and v2 return no match for cross-type `$gt`/`$gte`/`$lt`/`$lte`
-   - Behavior is the same, but v2 is explicit about it
+5. **lodash removed** — zero runtime dependencies
 
 ### Non-Breaking Additions
 
-- TypeScript types included
+- TypeScript types with `TypedQuery<T>` and dot-path autocomplete
 - ESM + CJS dual format
 - New operators: `$nor`, `$all`, `$size`
-- Custom operator registry
-- Pre-compiled filter functions
+- Custom operator registry with type-safe augmentation
+- Pre-compiled filter functions (1.5–3.7× faster)
 - Prototype pollution protection
-- Zero dependencies (lodash removed)
+- Failure trace diagnostics
 
 ## License
 

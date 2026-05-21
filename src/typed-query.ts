@@ -70,7 +70,7 @@ export type PathValue<T, P extends string> = P extends `${infer Head}.${infer Ta
  * Consumers can augment this interface via module augmentation:
  *
  * ```typescript
- * declare module '@ghost-shel./kuery' {
+ * declare module 'kuery' {
  *   interface CustomFieldOps<V> {
  *     $inGraph?: V extends string ? { relation: string; rootId: string } : never;
  *   }

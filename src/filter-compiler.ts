@@ -15,10 +15,7 @@ import {
 } from "./filter-operators.js";
 import type { OperatorRegistry } from "./operators.js";
 import { collectPath, PATH_MISSING, validateAndSplitPath } from "./path-utils.js";
-import { clearRegexCache, getRegexCacheSize } from "./regex-cache.js";
 import type { TypedQuery } from "./typed-query.js";
-
-export { clearRegexCache, getRegexCacheSize };
 
 /** Kuery function that tests a document against a compiled query. */
 export type FilterFn<T = Record<string, unknown>> = (doc: Readonly<T>) => boolean;
@@ -27,7 +24,6 @@ export type FilterFn<T = Record<string, unknown>> = (doc: Readonly<T>) => boolea
 export interface CompileFilterOptions {
   readonly registry?: OperatorRegistry;
   readonly maxDepth?: number;
-  readonly strict?: boolean;
 }
 
 function compilePath(node: ExprNode & { kind: "path" }): ValScopeFn {

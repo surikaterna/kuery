@@ -7,21 +7,20 @@ export { type FindOptions, find } from "./collection/find.js";
 export { findOne } from "./collection/find-one.js";
 // Compilation
 // Backward compatibility
-export { compile, compileShorthand, type Query, type ShorthandQuery } from "./compile.js";
+export { compile, type Query } from "./compile.js";
 export { KueryError, type KueryErrorCode } from "./errors.js";
 // Evaluation (thin facade)
-export { clearRegexCache, type EvaluateOptions, evaluate, getRegexCacheSize } from "./evaluator.js";
+export { type EvaluateOptions, evaluate } from "./evaluator.js";
 // Diagnostics
 export { type EvaluateWithTraceResult, evaluateWithTrace, type KueryFailureTrace } from "./failure-trace.js";
 export {
   type CompileFilterOptions,
-  clearRegexCache as clearFilterRegexCache,
   compileFilter,
   compileFilterFromAst,
   compileRawFromAst,
   type FilterFn,
-  getRegexCacheSize as getFilterRegexCacheSize,
 } from "./filter-compiler.js";
+export { clearRegexCache, getRegexCacheSize } from "./regex-cache.js";
 // Extensibility
 export {
   type CustomOperatorEntry,
@@ -32,13 +31,8 @@ export {
 
 // Path utilities
 export {
-  assertComparableTypes,
-  collectArrayLeaves,
   collectPath,
-  normalizeComparable,
-  PATH_MISSING,
   resolvePath,
-  resolveSegments,
   validateAndSplitPath,
 } from "./path-utils.js";
 export { Kuery, type KueryOptions } from "./kuery.js";

@@ -126,7 +126,7 @@ export function compileComparison(op: string, args: readonly ExprNode[]): BoolSc
   };
 }
 
-export function buildCmpFn(op: string): (a: unknown, b: unknown) => boolean {
+function buildCmpFn(op: string): (a: unknown, b: unknown) => boolean {
   switch (op) {
     case "$gt":
       return (a, b) => (a as number | string) > (b as number | string);

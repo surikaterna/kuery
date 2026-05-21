@@ -388,4 +388,24 @@ describe("v1 regression — compiler", () => {
     const p = compileFilter({ $and: [{ age: 10 }] });
     expect(p({ age: 10 })).toBe(true);
   });
+
+  it("should sort on a dot-path property", () => {
+    const docs = [
+      { id: 1, meta: { priority: 3 } },
+      { id: 2, meta: { priority: 1 } },
+      { id: 3, meta: { priority: 2 } },
+    ];
+    const r = new Kuery({}).sort({ "meta.priority": 1 }).find(docs);
+    expect(r.map((d) => d.id)).toEqual([2, 3, 1]);
+  });
+
+  it("should sort descending on a dot-path property", () => {
+    const docs = [
+      { id: 1, meta: { priority: 3 } },
+      { id: 2, meta: { priority: 1 } },
+      { id: 3, meta: { priority: 2 } },
+    ];
+    const r = new Kuery({}).sort({ "meta.priority": -1 }).find(docs);
+    expect(r.map((d) => d.id)).toEqual([1, 3, 2]);
+  });
 });

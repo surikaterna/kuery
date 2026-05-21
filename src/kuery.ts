@@ -8,7 +8,6 @@ import type { TypedQuery } from "./typed-query.js";
 /** Options for constructing a Kuery instance. */
 export interface KueryOptions {
   readonly registry?: CompileFilterOptions["registry"];
-  readonly strict?: boolean;
 }
 
 /** Compiled query that can test documents and find matches in collections. */
@@ -81,8 +80,10 @@ export class Kuery<T = Record<string, unknown>> {
   }
 
   /**
-   * Find exactly one matching document. Throws if count !== 1 (kuery-compatible).
-   * Ignores sort/skip/limit — findOne asserts uniqueness over the full collection.
+   * Find exactly one matching document. Throws KueryError if count !== 1.
+   *
+   * NOTE: This asserts uniqueness. For "find first or undefined" without assertion,
+   * use the standalone `findOne()` from `kuery/collection`.
    */
   findOne(collection: readonly T[]): T {
     let found: T | undefined;

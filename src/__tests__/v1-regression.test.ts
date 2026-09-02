@@ -43,6 +43,13 @@ describe("v1 regression — kuery.js", () => {
     expect(q.find(collection)).toHaveLength(3);
   });
 
+  it("should support nested $ne and $in query", () => {
+    const q = new Kuery({ status: { $ne: { $in: ["new", "rejected"] } } });
+    const terminalVisits = [{ status: "new" }, { status: "rejected" }, { status: "completed" }];
+
+    expect(q.find(terminalVisits)).toEqual([{ status: "completed" }]);
+  });
+
   it("should return all elements for property with empty $nin query", () => {
     const q = new Kuery({ id: { $nin: [] } });
     expect(q.find(collection)).toHaveLength(5);

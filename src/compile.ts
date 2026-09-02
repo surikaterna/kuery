@@ -68,6 +68,12 @@ function compileFieldOperators(field: string, operators: Record<string, unknown>
       continue;
     }
 
+    if (op === "$ne" && isOperatorObject(value)) {
+      const inner = compileFieldOperators(field, value);
+      nodes.push({ kind: "op", op: "$not", args: [inner] });
+      continue;
+    }
+
     if (op === "$elemMatch") {
       if (value === null || typeof value !== "object" || Array.isArray(value)) {
         throw new KueryError("KUERY_PARSE_INVALID_ARGUMENTS", "$elemMatch requires an object sub-query");

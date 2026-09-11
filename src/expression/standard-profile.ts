@@ -1,5 +1,10 @@
 import { ExpressionFailure } from "./result.js";
-import { ExpressionProfile, internalProfile, type ExpressionOperatorDefinition } from "./profile.js";
+import {
+  ExpressionProfile,
+  internalProfile,
+  type ExpressionEvaluationStrategy,
+  type ExpressionOperatorDefinition,
+} from "./profile.js";
 import type { JsonArray, JsonValue } from "./types.js";
 
 function equal(left: JsonValue, right: JsonValue): boolean {
@@ -50,7 +55,8 @@ function arithmetic(args: readonly JsonValue[], calculate: (left: number, right:
   return result;
 }
 
-const definitions: readonly ExpressionOperatorDefinition[] = [
+type StandardDefinition = ExpressionOperatorDefinition & { readonly strategy?: ExpressionEvaluationStrategy };
+const definitions: readonly StandardDefinition[] = [
   { name: "eq", arity: 2, resultType: "boolean", execute: ([left, right]) => equal(left!, right!) },
   { name: "neq", arity: 2, resultType: "boolean", execute: ([left, right]) => !equal(left!, right!) },
   { name: "gt", arity: 2, resultType: "boolean", execute: (args) => compare(args, (left, right) => left > right) },
@@ -64,10 +70,10 @@ const definitions: readonly ExpressionOperatorDefinition[] = [
   { name: "sub", arity: 2, inputTypes: ["number", "number"], resultType: "number", execute: (args) => arithmetic(args, (a, b) => a - b) },
   { name: "mul", arity: 2, inputTypes: ["number", "number"], resultType: "number", execute: (args) => arithmetic(args, (a, b) => a * b) },
   { name: "div", arity: 2, inputTypes: ["number", "number"], resultType: "number", execute: divide },
-  { name: "and", minArgs: 1, maxArgs: 32, inputTypes: ["boolean"], resultType: "boolean", execute: (args) => args.every(Boolean) },
-  { name: "or", minArgs: 1, maxArgs: 32, inputTypes: ["boolean"], resultType: "boolean", execute: (args) => args.some(Boolean) },
-  { name: "coalesce", minArgs: 1, maxArgs: 32, execute: (args) => args[0]! },
-  { name: "exists", arity: 1, resultType: "boolean", execute: () => true },
+  { name: "and", minArgs: 1, maxArgs: 32, inputTypes: ["boolean"], resultType: "boolean", strategy: "and", execute: (args) => args.every(Boolean) },
+  { name: "or", minArgs: 1, maxArgs: 32, inputTypes: ["boolean"], resultType: "boolean", strategy: "or", execute: (args) => args.some(Boolean) },
+  { name: "coalesce", minArgs: 1, maxArgs: 32, strategy: "coalesce", execute: (args) => args[0]! },
+  { name: "exists", arity: 1, resultType: "boolean", strategy: "exists", execute: () => true },
 ];
 
 function membership(value: JsonValue, choices: JsonValue | undefined, negate: boolean): boolean {

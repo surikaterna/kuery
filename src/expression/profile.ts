@@ -23,46 +23,75 @@ export interface ExpressionOperator extends ExpressionOperatorDefinition {
 const OPERATOR_NAME = /^[a-z][a-z0-9-]*(?:[.:/][a-z][a-z0-9-]*)*$/;
 const NAMESPACED_OPERATOR_NAME = /^[a-z][a-z0-9-]*[.:/][a-z][a-z0-9-]*(?:[.:/][a-z][a-z0-9-]*)*$/;
 const PROFILE_NAME = /^[A-Za-z][A-Za-z0-9._:/@-]{0,127}$/;
-const STANDARD_STRATEGIES = Symbol("standard expression strategies");
+const PROFILE_STATE = new WeakMap<ExpressionProfile, ReadonlyMap<string, ExpressionOperator>>();
 /**
  * Structurally immutable snapshot of operator metadata and callback identities.
  * Callbacks are trusted host code; their closed-over or function-object state remains producer-owned.
  */
 export class ExpressionProfile {
   readonly name: string;
-  readonly #operators: ReadonlyMap<string, ExpressionOperator>;
 
-  constructor(
-    name: string,
-    operators: Iterable<ExpressionOperatorDefinition>,
-    strategies?: typeof STANDARD_STRATEGIES,
-  ) {
+  constructor(name: string, operators: Iterable<ExpressionOperatorDefinition>) {
     validateProfileName(name);
     const snapshot = new Map<string, ExpressionOperator>();
-    for (const definition of operators) {
-      validateDefinition(definition);
-      if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
-      snapshot.set(definition.name, freezeDefinition(
-        definition,
-        strategies === STANDARD_STRATEGIES ? standardStrategy(definition.name) : undefined,
-      ));
-    }
+    addDefinitions(operators, snapshot);
     this.name = name;
-    this.#operators = snapshot;
+    PROFILE_STATE.set(this, snapshot);
     Object.freeze(this);
   }
 
+  /** Derive a new immutable profile while preserving this profile's evaluation semantics. */
+  extend(name: string, operators: Iterable<ExpressionOperatorDefinition>): ExpressionProfile {
+    const snapshot = new Map(profileOperators(this));
+    for (const definition of operators) {
+      validateCustomDefinition(definition);
+      if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
+      snapshot.set(definition.name, freezeDefinition(definition));
+    }
+    return createProfileSnapshot(name, snapshot);
+  }
+
   get(name: string): ExpressionOperator | undefined {
-    return this.#operators.get(name);
+    return profileOperators(this).get(name);
   }
 
   has(name: string): boolean {
-    return this.#operators.has(name);
+    return profileOperators(this).has(name);
   }
 
   get definitions(): readonly ExpressionOperator[] {
-    return Object.freeze([...this.#operators.values()]);
+    return Object.freeze([...profileOperators(this).values()]);
   }
+}
+
+function profileOperators(profile: ExpressionProfile): ReadonlyMap<string, ExpressionOperator> {
+  const operators = PROFILE_STATE.get(profile);
+  if (!operators) throw new TypeError("Invalid expression profile receiver.");
+  return operators;
+}
+
+function addDefinitions(
+  operators: Iterable<ExpressionOperatorDefinition>,
+  snapshot: Map<string, ExpressionOperator>,
+): void {
+  for (const definition of operators) {
+    validateDefinition(definition);
+    if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
+    snapshot.set(definition.name, freezeDefinition(definition));
+  }
+}
+
+function createProfileSnapshot(
+  name: string,
+  operators: ReadonlyMap<string, ExpressionOperator>,
+): ExpressionProfile {
+  validateProfileName(name);
+  const profile = Object.create(ExpressionProfile.prototype) as ExpressionProfile;
+  const snapshot = new Map(operators);
+  Object.defineProperty(profile, "name", { value: name, enumerable: true });
+  PROFILE_STATE.set(profile, snapshot);
+  Object.freeze(profile);
+  return profile;
 }
 
 /** Mutable construction helper whose build result is an independent structural snapshot. */
@@ -74,10 +103,7 @@ export class ExpressionProfileBuilder {
   }
 
   add(definition: ExpressionOperatorDefinition): this {
-    validateDefinition(definition);
-    if (!NAMESPACED_OPERATOR_NAME.test(definition.name)) {
-      throw new TypeError("Custom expression operators require a namespaced name.");
-    }
+    validateCustomDefinition(definition);
     if (this.definitions.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
     this.definitions.set(definition.name, definition);
     return this;
@@ -110,6 +136,13 @@ function validateDefinition(definition: ExpressionOperatorDefinition): void {
   }
 }
 
+function validateCustomDefinition(definition: ExpressionOperatorDefinition): void {
+  validateDefinition(definition);
+  if (!NAMESPACED_OPERATOR_NAME.test(definition.name)) {
+    throw new TypeError("Custom expression operators require a namespaced name.");
+  }
+}
+
 function validateProfileName(name: string): void {
   if (!PROFILE_NAME.test(name)) throw new TypeError("Expression profile name is invalid.");
 }
@@ -136,16 +169,17 @@ function freezeDefinition(
   });
 }
 
-function standardStrategy(name: string): ExpressionEvaluationStrategy | undefined {
-  if (name === "and" || name === "or" || name === "coalesce" || name === "exists") return name;
-  return undefined;
-}
-
 function createStandardProfile(
   name: string,
-  operators: Iterable<ExpressionOperatorDefinition>,
+  operators: Iterable<ExpressionOperatorDefinition & { readonly strategy?: ExpressionEvaluationStrategy }>,
 ): ExpressionProfile {
-  return new ExpressionProfile(name, operators, STANDARD_STRATEGIES);
+  const snapshot = new Map<string, ExpressionOperator>();
+  for (const definition of operators) {
+    validateDefinition(definition);
+    if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
+    snapshot.set(definition.name, freezeDefinition(definition, definition.strategy));
+  }
+  return createProfileSnapshot(name, snapshot);
 }
 
 export const internalProfile = Object.freeze({ createStandardProfile });

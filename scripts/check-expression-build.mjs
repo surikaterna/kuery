@@ -14,12 +14,21 @@ for (const api of [esm, cjs]) {
   assert.equal(typeof api.compileExpression, "function");
   assert.equal(typeof api.generateExpressionJsonSchema, "function");
   assert.equal(typeof api.getStandardExpressionJsonSchema, "function");
+  assert.equal(typeof api.standardV1.extend, "function");
   assert.equal(api.standardV1.name, "standard-v1");
   const compiled = api.compileExpression(
     { kind: "op", op: "add", args: [{ kind: "literal", value: 1 }, { kind: "literal", value: 2 }] },
     { profile: api.standardV1 },
   );
   assert.deepEqual(compiled.ok && compiled.value.evaluate(() => ({ found: false })), { ok: true, value: 3 });
+  const extended = api.standardV1.extend("smoke-v1", [
+    { name: "smoke:constant", arity: 0, execute: () => 7 },
+  ]);
+  const fallback = api.compileExpression(
+    { kind: "op", op: "coalesce", args: [{ kind: "ref", ref: "missing" }, { kind: "op", op: "smoke:constant", args: [] }] },
+    { profile: extended },
+  );
+  assert.deepEqual(fallback.ok && fallback.value.evaluate(() => ({ found: false })), { ok: true, value: 7 });
 }
 
 console.log("expression ESM/CJS smoke passed");

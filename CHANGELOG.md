@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Additive strict expression core through `kuery/expression` and selected root exports: bounded JSON `ValueExpression<R>` canonicalization, structurally immutable profiles and `standard-v1`, profile-aware strict JSON Schema generation, whole-AST compilation, deterministic dependency extraction, generic reference resolution, and stable diagnostics. Operator callbacks are trusted producer-owned code whose closed-over state cannot be frozen; ordinary native Promise results are consumed, while producers retain ownership of pre-existing rejections on suspicious Promise shapes rejected without getter access.
+- Add immutable `ExpressionProfile.extend(name, operators)` composition, preserving inherited lazy evaluation strategies while rejecting overrides and accepting only distinct namespaced custom operators.
 - ESM, CJS, and TypeScript declarations for the new expression subpath. Existing v2 query APIs and consumers require no migration.
 
 ## [2.0.0] — 2026-05-21

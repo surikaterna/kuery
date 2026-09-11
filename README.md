@@ -235,6 +235,20 @@ const profile = new ExpressionProfileBuilder('my-app')
   .build();
 ```
 
+Extend an existing profile when custom operators must retain its complete evaluation semantics. `extend` carries forward built-in lazy behavior without exposing strategy internals or copying handlers:
+
+```typescript
+const arbitreV1 = standardV1.extend('arbitre-v1', [{
+  name: 'arbitre:score',
+  arity: 1,
+  inputTypes: ['number'],
+  resultType: 'number',
+  execute: ([value]) => value as number,
+}]);
+```
+
+Extensions only accept new namespaced operators. Existing names cannot be replaced, chained extensions retain inherited semantics, and both the base and result remain independent structurally immutable profiles. `definitions` remains a frozen metadata view for inspection and schema tooling; reconstructing a profile with `new ExpressionProfile(name, profile.definitions)` is not composition and intentionally does not transfer internal evaluation strategies. Use `profile.extend(...)` instead.
+
 Profile immutability covers copied operator metadata, definitions, lookup, and callback identity. JavaScript cannot snapshot or deep-freeze a function's closure or function-object properties without changing its semantics. Operator handlers and resolvers are therefore trusted host callbacks: producers must keep their external state pure/deterministic for the lifetime of a profile.
 
 Ordinary same- or cross-realm native Promise results, including rejections, are consumed and reported as `EXPRESSION_ASYNC_UNSUPPORTED`. Suspicious Promise shapes—subclasses, own `constructor`/`then`/`Symbol.species` properties, or altered prototypes—are rejected without reading user-controlled getters or invoking thenables. Kuery does not mutate these objects and cannot take ownership of a rejection that the producer created before returning a suspicious Promise; producers must pre-handle such rejections. Untrusted expression AST and JSON values never invoke this async detector: non-plain objects, including Promises, are rejected structurally without reading their properties.

@@ -378,6 +378,57 @@ describe("custom structurally immutable profiles", () => {
     expect(compileExpression(op("app:double", literal(3)), { profile: first })).toMatchObject({ ok: true });
   });
 
+  test("extends standard-v1 without losing lazy evaluation strategies", () => {
+    let customCalls = 0;
+    const derived = standardV1.extend("arbitre-v1", [{
+      name: "arbitre:double",
+      arity: 1,
+      inputTypes: ["number"],
+      resultType: "number",
+      execute: ([value]) => { customCalls += 1; return (value as number) * 2; },
+    }]);
+    const resolveMissing = () => ({ found: false as const });
+    const cases: readonly [ValueExpression, JsonValue][] = [
+      [op("coalesce", ref("missing"), literal(7)), 7],
+      [op("exists", ref("missing")), false],
+      [op("and", literal(false), ref("missing")), false],
+      [op("or", literal(true), ref("missing")), true],
+      [op("arbitre:double", literal(3)), 6],
+    ];
+    for (const [expression, expected] of cases) {
+      const compiled = compileExpression(expression, { profile: derived });
+      expect(compiled.ok && compiled.value.evaluate(resolveMissing)).toEqual({ ok: true, value: expected });
+    }
+    expect(customCalls).toBe(1);
+  });
+
+  test("rejects extension overrides and leaves base and derived profiles isolated", () => {
+    const extra = { name: "arbitre:constant", arity: 0, execute: () => 1 } as const;
+    const derived = standardV1.extend("arbitre-v1", [extra]);
+    const chained = derived.extend("arbitre-v2", [{ name: "arbitre:other", arity: 0, execute: () => 2 }]);
+    expect(() => standardV1.extend("bad", [{ name: "add", arity: 0, execute: () => 0 }])).toThrow(TypeError);
+    expect(() => derived.extend("bad", [extra])).toThrow(TypeError);
+    expect(standardV1.has("arbitre:constant")).toBe(false);
+    expect(derived.has("arbitre:other")).toBe(false);
+    expect(chained.has("arbitre:constant")).toBe(true);
+    expect(chained.has("arbitre:other")).toBe(true);
+    expect(Object.isFrozen(derived)).toBe(true);
+    expect(Object.isFrozen(derived.definitions)).toBe(true);
+    expect(derived.get("and")?.execute).toBe(standardV1.get("and")?.execute);
+  });
+
+  test("includes inherited and custom operators in generated schemas", () => {
+    const derived = standardV1.extend("arbitre-v1", [{
+      name: "arbitre:constant", arity: 0, execute: () => 1,
+    }]);
+    const schema = generateExpressionJsonSchema(derived) as any;
+    const names = schema.$defs.expression.oneOf
+      .map((candidate: any) => candidate.properties?.op?.const)
+      .filter(Boolean);
+    expect(names).toContain("coalesce");
+    expect(names).toContain("arbitre:constant");
+  });
+
   test("validates bounded ASCII profile names used in schema identifiers", () => {
     const definition = { name: "app:value", arity: 0, execute: () => null };
     expect(new ExpressionProfile("app:a.b/c-d@v1", [definition]).name).toBe("app:a.b/c-d@v1");

@@ -45,3 +45,33 @@ export { assertSafeSegment, DANGEROUS_KEYS } from "./safe-path.js";
 // Sort utilities
 export { applySorting, compareValues } from "./sort-utils.js";
 export type { CustomFieldOps, DotPaths, FieldCondition, PathValue, TypedQuery, UntypedQuery } from "./typed-query.js";
+
+// Strict generic expression core (also available from kuery/expression)
+export {
+  canonicalizeExpression,
+  compileExpression,
+  DEFAULT_EXPRESSION_LIMITS,
+  ExpressionProfile,
+  ExpressionProfileBuilder,
+  extractExpressionDependencies,
+  generateExpressionJsonSchema,
+  getStandardExpressionJsonSchema,
+  MAX_EXPRESSION_OPERATOR_ARGS,
+  standardV1,
+} from "./expression/index.js";
+export type {
+  CanonicalizeExpressionOptions,
+  CompiledExpression,
+  CompileExpressionOptions,
+  ExpressionDiagnostic,
+  ExpressionDiagnosticCode,
+  ExpressionLimits,
+  ExpressionJsonSchema,
+  ExpressionOperatorDefinition,
+  JsonValue,
+  ReferenceCodec,
+  ReferenceResolution,
+  ReferenceResolver,
+  Result,
+  ValueExpression,
+} from "./expression/index.js";

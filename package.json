@@ -56,14 +56,21 @@
       "types": "./dist/safe-path.d.ts",
       "import": "./dist/safe-path.js",
       "require": "./dist/safe-path.cjs"
+    },
+    "./expression": {
+      "types": "./dist/expression.d.ts",
+      "import": "./dist/expression.js",
+      "require": "./dist/expression.cjs"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs/adr/0001-standard-expression-core.md"],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:expression-build": "node scripts/check-expression-build.mjs",
+    "test:expression-types": "tsc --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext test/expression-public-types.mts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
@@ -74,6 +81,7 @@
   "author": "Surikat AB",
   "license": "ISC",
   "devDependencies": {
+    "ajv": "^8.17.1",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"

@@ -187,6 +187,62 @@ Pre-compiling filters is recommended for hot paths (event handlers, stream proce
 
 ## Advanced Usage
 
+### Strict generic expressions
+
+The additive `kuery/expression` entry is independent of the Mongo-style query API. It validates an entire JSON AST, snapshots structurally immutable operator definitions and lookup, extracts opaque dependencies, and evaluates through a host resolver:
+
+```typescript
+import { compileExpression, standardV1, type ValueExpression } from 'kuery/expression';
+
+const expression: ValueExpression = {
+  kind: 'op',
+  op: 'gte',
+  args: [
+    { kind: 'ref', ref: 'account.balance' },
+    { kind: 'literal', value: 100 },
+  ],
+};
+
+const compiled = compileExpression(expression, { profile: standardV1 });
+if (compiled.ok) {
+  console.log(compiled.value.dependencies); // ['account.balance']
+  const result = compiled.value.evaluate((reference) =>
+    reference === 'account.balance'
+      ? { found: true, value: 125 }
+      : { found: false },
+  );
+  // { ok: true, value: true }, or { ok: false, diagnostic: { code, path, message } }
+}
+```
+
+Resolvers return `{ found: true, value }`, `{ found: false }`, or `{ found: false, reason: 'denied' }`; failures are code-first diagnostics and thrown values are not exposed. `standard-v1` is strict and non-coercing. Equality recursively compares JSON values (object key order is ignored; array order matters), comparisons require two numbers or two strings, and arithmetic accepts finite numbers only. `and` and `or` stop at the decisive boolean; `coalesce` skips missing outcomes (including from nested expressions) and `null`; `exists` converts a found/missing nested outcome to a boolean. Dependencies always list every static reference, so capability-aware hosts should authorize `dependencies` before evaluation when all potential references require authorization.
+
+Standard operator names are `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not`, `in`, `nin`, `exists`, `coalesce`, `add`, `sub`, `mul`, and `div`.
+
+Custom trusted synchronous operators use an isolated structurally immutable profile rather than the legacy global query registry. Profile names are stable ASCII identifiers of at most 128 characters and must match `[A-Za-z][A-Za-z0-9._:/@-]*`:
+
+```typescript
+import { ExpressionProfileBuilder } from 'kuery/expression';
+
+const profile = new ExpressionProfileBuilder('my-app')
+  .add({
+    name: 'my-app:double',
+    arity: 1,
+    inputTypes: ['number'],
+    resultType: 'number',
+    execute: ([value]) => (value as number) * 2,
+  })
+  .build();
+```
+
+Profile immutability covers copied operator metadata, definitions, lookup, and callback identity. JavaScript cannot snapshot or deep-freeze a function's closure or function-object properties without changing its semantics. Operator handlers and resolvers are therefore trusted host callbacks: producers must keep their external state pure/deterministic for the lifetime of a profile.
+
+Ordinary same- or cross-realm native Promise results, including rejections, are consumed and reported as `EXPRESSION_ASYNC_UNSUPPORTED`. Suspicious Promise shapes—subclasses, own `constructor`/`then`/`Symbol.species` properties, or altered prototypes—are rejected without reading user-controlled getters or invoking thenables. Kuery does not mutate these objects and cannot take ownership of a rejection that the producer created before returning a suspicious Promise; producers must pre-handle such rejections. Untrusted expression AST and JSON values never invoke this async detector: non-plain objects, including Promises, are rejected structurally without reading their properties.
+
+`getStandardExpressionJsonSchema()` returns the strict `standard-v1` Draft 2020-12 schema; `generateExpressionJsonSchema(profile)` derives the equivalent schema from a custom profile's operator names and arities. Schemas use closed node objects, a maximum of 32 operator arguments, recursive JSON-only literals, and the default string reference representation; custom reference codecs remain a runtime boundary and require host-owned schema adaptation.
+
+Reference objects can be generic JSON when supplied with a caller-owned `reference.validate` guard and optional canonicalizer. See [ADR 0001](docs/adr/0001-standard-expression-core.md) for trust boundaries, diagnostics, ownership, and compatibility. The ADR is included in the published package. This API does not add a parser or language tooling.
+
 ### Pre-compiled filters
 
 ```typescript
@@ -238,6 +294,7 @@ import { evaluate } from 'kuery/evaluate';
 import { OperatorRegistry } from 'kuery/operators';
 import { KueryError } from 'kuery/errors';
 import { find, findOne } from 'kuery/collection';
+import { compileExpression, standardV1 } from 'kuery/expression';
 ```
 
 ## Migrating from v1

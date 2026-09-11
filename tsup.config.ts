@@ -12,6 +12,7 @@ export default defineConfig({
     ast: "src/ast.ts",
     errors: "src/errors.ts",
     "safe-path": "src/safe-path.ts",
+    expression: "src/expression/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

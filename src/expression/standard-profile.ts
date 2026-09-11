@@ -2,7 +2,6 @@ import { ExpressionFailure } from "./result.js";
 import {
   ExpressionProfile,
   internalProfile,
-  type ExpressionEvaluationStrategy,
   type ExpressionOperatorDefinition,
 } from "./profile.js";
 import type { JsonArray, JsonValue } from "./types.js";
@@ -55,7 +54,8 @@ function arithmetic(args: readonly JsonValue[], calculate: (left: number, right:
   return result;
 }
 
-type StandardDefinition = ExpressionOperatorDefinition & { readonly strategy?: ExpressionEvaluationStrategy };
+type StandardStrategy = "and" | "or" | "coalesce" | "exists" | "if";
+type StandardDefinition = ExpressionOperatorDefinition & { readonly strategy?: StandardStrategy };
 const definitions: readonly StandardDefinition[] = [
   { name: "eq", arity: 2, resultType: "boolean", execute: ([left, right]) => equal(left!, right!) },
   { name: "neq", arity: 2, resultType: "boolean", execute: ([left, right]) => !equal(left!, right!) },
@@ -74,6 +74,7 @@ const definitions: readonly StandardDefinition[] = [
   { name: "or", minArgs: 1, maxArgs: 32, inputTypes: ["boolean"], resultType: "boolean", strategy: "or", execute: (args) => args.some(Boolean) },
   { name: "coalesce", minArgs: 1, maxArgs: 32, strategy: "coalesce", execute: (args) => args[0]! },
   { name: "exists", arity: 1, resultType: "boolean", strategy: "exists", execute: () => true },
+  { name: "if", arity: 3, inputTypes: ["boolean", "any", "any"], strategy: "if", execute: ([condition, whenTrue, whenFalse]) => condition ? whenTrue! : whenFalse! },
 ];
 
 function membership(value: JsonValue, choices: JsonValue | undefined, negate: boolean): boolean {

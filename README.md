@@ -215,9 +215,9 @@ if (compiled.ok) {
 }
 ```
 
-Resolvers return `{ found: true, value }`, `{ found: false }`, or `{ found: false, reason: 'denied' }`; failures are code-first diagnostics and thrown values are not exposed. `standard-v1` is strict and non-coercing. Equality recursively compares JSON values (object key order is ignored; array order matters), comparisons require two numbers or two strings, and arithmetic accepts finite numbers only. `and` and `or` stop at the decisive boolean; `coalesce` skips missing outcomes (including from nested expressions) and `null`; `exists` converts a found/missing nested outcome to a boolean. Dependencies always list every static reference, so capability-aware hosts should authorize `dependencies` before evaluation when all potential references require authorization.
+Resolvers return `{ found: true, value }`, `{ found: false }`, or `{ found: false, reason: 'denied' }`; failures are code-first diagnostics and thrown values are not exposed. `standard-v1` is strict and non-coercing. Equality recursively compares JSON values (object key order is ignored; array order matters), comparisons require two numbers or two strings, and arithmetic accepts finite numbers only. `and` and `or` stop at the decisive boolean; `coalesce` skips missing outcomes (including from nested expressions) and `null`; `exists` converts a found/missing nested outcome to a boolean. `if(condition, whenTrue, whenFalse)` requires a boolean condition and evaluates only the selected arbitrary-JSON branch. Missing or denied outcomes propagate from the condition and selected branch, while the unselected branch performs no resolver or operator work. Dependencies always list every static reference, including both `if` branches, so capability-aware hosts should authorize `dependencies` before evaluation when all potential references require authorization.
 
-Standard operator names are `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not`, `in`, `nin`, `exists`, `coalesce`, `add`, `sub`, `mul`, and `div`.
+Standard operator names are `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `and`, `or`, `not`, `in`, `nin`, `exists`, `coalesce`, `if`, `add`, `sub`, `mul`, and `div`.
 
 Custom trusted synchronous operators use an isolated structurally immutable profile rather than the legacy global query registry. Profile names are stable ASCII identifiers of at most 128 characters and must match `[A-Za-z][A-Za-z0-9._:/@-]*`:
 
@@ -248,6 +248,8 @@ const arbitreV1 = standardV1.extend('arbitre-v1', [{
 ```
 
 Extensions only accept new namespaced operators. Existing names cannot be replaced, chained extensions retain inherited semantics, and both the base and result remain independent structurally immutable profiles. `definitions` remains a frozen metadata view for inspection and schema tooling; reconstructing a profile with `new ExpressionProfile(name, profile.definitions)` is not composition and intentionally does not transfer internal evaluation strategies. Use `profile.extend(...)` instead.
+
+Lazy traversal remains limited to standard operators, including `if`. Custom profile operators always use eager `execute(args)`; no public strategy discriminator or traversal hook is exposed.
 
 Profile immutability covers copied operator metadata, definitions, lookup, and callback identity. JavaScript cannot snapshot or deep-freeze a function's closure or function-object properties without changing its semantics. Operator handlers and resolvers are therefore trusted host callbacks: producers must keep their external state pure/deterministic for the lifetime of a profile.
 

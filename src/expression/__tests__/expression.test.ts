@@ -201,6 +201,36 @@ describe("standard-v1 profile", () => {
     expect(compileExpression(op("and"), { profile: standardV1 })).toMatchObject({ ok: false, diagnostic: { code: "EXPRESSION_INVALID_ARITY" } });
     const profile = new ExpressionProfileBuilder("bounded").add({ name: "app:pick", minArgs: 1, maxArgs: 2, execute: ([first]) => first! }).build();
     expect(compileExpression(op("app:pick", literal(1), literal(2), literal(3)), { profile })).toMatchObject({ ok: false, diagnostic: { code: "EXPRESSION_INVALID_ARITY" } });
+    for (const args of [[], [literal(true)], [literal(true), literal(1)], [literal(true), literal(1), literal(2), literal(3)]]) {
+      expect(compileExpression(op("if", ...args), { profile: standardV1 })).toMatchObject({
+        ok: false,
+        diagnostic: { code: "EXPRESSION_INVALID_ARITY" },
+      });
+    }
+  });
+
+  test("selects arbitrary JSON values from strict boolean if branches", () => {
+    expect(evaluate(op("if", literal(true), literal({ selected: [1] }), literal("no")))).toEqual({
+      ok: true, value: { selected: [1] },
+    });
+    expect(evaluate(op("if", literal(false), literal("no"), literal([null, true])))).toEqual({
+      ok: true, value: [null, true],
+    });
+    expect(evaluate(op("if", literal(1), literal("yes"), literal("no")))).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_TYPE_MISMATCH", path: ["args", 0] },
+    });
+  });
+
+  test("validates both if branches even when one would be unselected", () => {
+    expect(compileExpression({
+      kind: "op",
+      op: "if",
+      args: [literal(true), literal(1), { kind: "op", op: "unknown", args: [] }],
+    }, { profile: standardV1 })).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_UNKNOWN_OPERATOR", path: ["args", 2, "op"] },
+    });
   });
 
   test("rejects unknown operators at compile time", () => {
@@ -277,6 +307,76 @@ describe("compiled expression", () => {
     if (!compiled.ok) return;
     expect(compiled.value.dependencies).toEqual(["not-read"]);
     expect(compiled.value.evaluate(() => { throw new Error("must not run"); })).toEqual({ ok: true, value: false });
+  });
+
+  test.each([true, false])("if evaluates only its %s branch while retaining static dependencies", (condition) => {
+    const selected = condition ? "true" : "false";
+    const skipped = condition ? "false" : "true";
+    const expression = op("if", ref("condition"), ref("true"), ref("false"));
+    const compiled = compileExpression(expression, { profile: standardV1 });
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    expect(compiled.value.dependencies).toEqual(["condition", "true", "false"]);
+    const reads: string[] = [];
+    expect(compiled.value.evaluate((reference) => {
+      reads.push(reference);
+      if (reference === "condition") return { found: true, value: condition };
+      if (reference === selected) return { found: true, value: { selected } };
+      return { found: false, reason: "denied" };
+    })).toEqual({ ok: true, value: { selected } });
+    expect(reads).toEqual(["condition", selected]);
+    expect(reads).not.toContain(skipped);
+  });
+
+  test("if does not execute an unselected operator or charge its evaluation steps", () => {
+    let calls = 0;
+    const profile = standardV1.extend("if-test-v1", [{
+      name: "app:throw", arity: 0, execute: () => { calls += 1; throw new Error("unselected"); },
+    }]);
+    const compiled = compileExpression(op("if", literal(true), literal(7), op("app:throw")), {
+      profile,
+      limits: { maxEvaluationSteps: 3 },
+    });
+    expect(compiled.ok && compiled.value.evaluate(() => { throw new Error("unselected resolver"); })).toEqual({
+      ok: true, value: 7,
+    });
+    expect(calls).toBe(0);
+  });
+
+  test("if does not call a resolver for its unselected branch", () => {
+    let reads = 0;
+    const compiled = compileExpression(op("if", literal(false), ref("unselected"), literal("selected")), {
+      profile: standardV1,
+    });
+    expect(compiled.ok && compiled.value.evaluate(() => {
+      reads += 1;
+      throw new Error("unselected");
+    })).toEqual({ ok: true, value: "selected" });
+    expect(reads).toBe(0);
+  });
+
+  test("if propagates errors from its selected operator", () => {
+    const profile = standardV1.extend("if-error-v1", [{
+      name: "app:throw", arity: 0, execute: () => { throw new Error("selected"); },
+    }]);
+    const compiled = compileExpression(op("if", literal(true), op("app:throw"), literal(1)), { profile });
+    expect(compiled.ok && compiled.value.evaluate(() => ({ found: false }))).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_OPERATOR_ERROR", path: ["args", 1] },
+    });
+  });
+
+  test.each([
+    ["condition missing", op("if", ref("condition"), literal(1), literal(2)), "EXPRESSION_REFERENCE_MISSING"],
+    ["condition denied", op("if", ref("condition"), literal(1), literal(2)), "EXPRESSION_REFERENCE_DENIED"],
+    ["selected missing", op("if", literal(true), ref("selected"), literal(2)), "EXPRESSION_REFERENCE_MISSING"],
+    ["selected denied", op("if", literal(false), literal(1), ref("selected")), "EXPRESSION_REFERENCE_DENIED"],
+  ] as const)("if propagates %s", (name, expression, code) => {
+    const compiled = compileExpression(expression, { profile: standardV1 });
+    const denied = name.includes("denied");
+    expect(compiled.ok && compiled.value.evaluate(() => denied
+      ? { found: false, reason: "denied" }
+      : { found: false })).toMatchObject({ ok: false, diagnostic: { code } });
   });
 
   test("contains resolver throws, malformed results, async results, and invalid values", () => {
@@ -393,6 +493,7 @@ describe("custom structurally immutable profiles", () => {
       [op("exists", ref("missing")), false],
       [op("and", literal(false), ref("missing")), false],
       [op("or", literal(true), ref("missing")), true],
+      [op("if", literal(true), literal("selected"), ref("missing")), "selected"],
       [op("arbitre:double", literal(3)), 6],
     ];
     for (const [expression, expected] of cases) {
@@ -415,6 +516,12 @@ describe("custom structurally immutable profiles", () => {
     expect(Object.isFrozen(derived)).toBe(true);
     expect(Object.isFrozen(derived.definitions)).toBe(true);
     expect(derived.get("and")?.execute).toBe(standardV1.get("and")?.execute);
+    const conditional = compileExpression(op("if", literal(false), ref("missing"), literal("selected")), {
+      profile: chained,
+    });
+    expect(conditional.ok && conditional.value.evaluate(() => ({ found: false }))).toEqual({
+      ok: true, value: "selected",
+    });
   });
 
   test("includes inherited and custom operators in generated schemas", () => {
@@ -426,7 +533,10 @@ describe("custom structurally immutable profiles", () => {
       .map((candidate: any) => candidate.properties?.op?.const)
       .filter(Boolean);
     expect(names).toContain("coalesce");
+    expect(names).toContain("if");
     expect(names).toContain("arbitre:constant");
+    const conditional = schema.$defs.expression.oneOf.find((candidate: any) => candidate.properties?.op?.const === "if");
+    expect(conditional.properties.args).toMatchObject({ minItems: 3, maxItems: 3 });
   });
 
   test("validates bounded ASCII profile names used in schema identifiers", () => {
@@ -450,6 +560,11 @@ describe("custom structurally immutable profiles", () => {
     const compiled = compileExpression(op("and", literal(true)), { profile });
     expect(compiled.ok && compiled.value.evaluate(() => ({ found: false }))).toEqual({ ok: true, value: "custom" });
     expect(calls).toBe(1);
+  });
+
+  test("does not expose lazy strategy metadata", () => {
+    expect(standardV1.get("if")).not.toHaveProperty("strategy");
+    expect(standardV1.definitions.every((definition) => !("strategy" in definition))).toBe(true);
   });
 
   test("defines structural immutability and treats callback state as producer-owned", () => {

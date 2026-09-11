@@ -3,7 +3,7 @@ import type { JsonValue } from "./types.js";
 export type ExpressionValueType = "any" | "null" | "boolean" | "number" | "string" | "array" | "object";
 export const MAX_EXPRESSION_OPERATOR_ARGS = 32;
 export type ExpressionOperatorFn = (args: readonly JsonValue[]) => JsonValue;
-export type ExpressionEvaluationStrategy = "and" | "or" | "coalesce" | "exists";
+type ExpressionEvaluationStrategy = "and" | "or" | "coalesce" | "exists" | "if";
 
 export interface ExpressionOperatorDefinition {
   readonly name: string;
@@ -15,15 +15,13 @@ export interface ExpressionOperatorDefinition {
   readonly execute: ExpressionOperatorFn;
 }
 
-export interface ExpressionOperator extends ExpressionOperatorDefinition {
-  readonly inputTypes?: readonly ExpressionValueType[];
-  readonly strategy?: ExpressionEvaluationStrategy;
-}
+export interface ExpressionOperator extends ExpressionOperatorDefinition {}
 
 const OPERATOR_NAME = /^[a-z][a-z0-9-]*(?:[.:/][a-z][a-z0-9-]*)*$/;
 const NAMESPACED_OPERATOR_NAME = /^[a-z][a-z0-9-]*[.:/][a-z][a-z0-9-]*(?:[.:/][a-z][a-z0-9-]*)*$/;
 const PROFILE_NAME = /^[A-Za-z][A-Za-z0-9._:/@-]{0,127}$/;
 const PROFILE_STATE = new WeakMap<ExpressionProfile, ReadonlyMap<string, ExpressionOperator>>();
+const OPERATOR_STRATEGIES = new WeakMap<ExpressionOperator, ExpressionEvaluationStrategy>();
 /**
  * Structurally immutable snapshot of operator metadata and callback identities.
  * Callbacks are trusted host code; their closed-over or function-object state remains producer-owned.
@@ -157,16 +155,17 @@ function freezeDefinition(
   definition: ExpressionOperatorDefinition,
   strategy?: ExpressionEvaluationStrategy,
 ): ExpressionOperator {
-  return Object.freeze({
+  const operator = Object.freeze({
     name: definition.name,
     arity: definition.arity,
     minArgs: definition.minArgs,
     maxArgs: definition.maxArgs,
     inputTypes: definition.inputTypes ? Object.freeze([...definition.inputTypes]) : undefined,
     resultType: definition.resultType,
-    strategy,
     execute: definition.execute,
   });
+  if (strategy) OPERATOR_STRATEGIES.set(operator, strategy);
+  return operator;
 }
 
 function createStandardProfile(
@@ -182,4 +181,8 @@ function createStandardProfile(
   return createProfileSnapshot(name, snapshot);
 }
 
-export const internalProfile = Object.freeze({ createStandardProfile });
+function getEvaluationStrategy(operator: ExpressionOperator): ExpressionEvaluationStrategy | undefined {
+  return OPERATOR_STRATEGIES.get(operator);
+}
+
+export const internalProfile = Object.freeze({ createStandardProfile, getEvaluationStrategy });

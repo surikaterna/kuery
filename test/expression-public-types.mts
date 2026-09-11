@@ -23,6 +23,12 @@ const codec: ReferenceCodec<AppReference> = {
 const compiled = compileExpression<AppReference>(expression, { profile: standardV1, reference: codec });
 const extended = standardV1.extend("app-v1", [{ name: "app:constant", arity: 0, execute: () => 1 }]);
 void extended;
+const conditional: ValueExpression = {
+  kind: "op",
+  op: "if",
+  args: [{ kind: "literal", value: true }, { kind: "literal", value: 1 }, { kind: "literal", value: null }],
+};
+void conditional;
 const schema: Readonly<Record<string, unknown>> = generateExpressionJsonSchema(standardV1);
 const standardSchema: Readonly<Record<string, unknown>> = getStandardExpressionJsonSchema();
 void schema;

@@ -25,7 +25,7 @@ for (const api of [esm, cjs]) {
     { name: "smoke:constant", arity: 0, execute: () => 7 },
   ]);
   const fallback = api.compileExpression(
-    { kind: "op", op: "coalesce", args: [{ kind: "ref", ref: "missing" }, { kind: "op", op: "smoke:constant", args: [] }] },
+    { kind: "op", op: "if", args: [{ kind: "literal", value: true }, { kind: "op", op: "smoke:constant", args: [] }, { kind: "ref", ref: "missing" }] },
     { profile: extended },
   );
   assert.deepEqual(fallback.ok && fallback.value.evaluate(() => ({ found: false })), { ok: true, value: 7 });

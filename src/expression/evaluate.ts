@@ -1,7 +1,7 @@
 import { cloneJson } from "./inspect.js";
 import { rejectCallbackPromise } from "./callback-promise.js";
 import { ExpressionFailure, failure, success } from "./result.js";
-import type { ExpressionOperator, ExpressionValueType } from "./profile.js";
+import { internalProfile, type ExpressionOperator, type ExpressionValueType } from "./profile.js";
 import type {
   ExpressionLimits,
   ExpressionPath,
@@ -116,9 +116,11 @@ function evaluateOperator<R extends JsonValue>(
   path: ExpressionPath,
   state: EvaluationState<R>,
 ): Outcome {
-  if (operator.strategy === "exists") return evaluateExists(node.args[0]!, [...path, "args", 0], state);
-  if (operator.strategy === "and" || operator.strategy === "or") return evaluateBoolean(node, operator, path, state);
-  if (operator.strategy === "coalesce") return evaluateCoalesce(node, path, state);
+  const strategy = internalProfile.getEvaluationStrategy(operator);
+  if (strategy === "exists") return evaluateExists(node.args[0]!, [...path, "args", 0], state);
+  if (strategy === "and" || strategy === "or") return evaluateBoolean(node, strategy, path, state);
+  if (strategy === "coalesce") return evaluateCoalesce(node, path, state);
+  if (strategy === "if") return evaluateIf(node, path, state);
   const args: JsonValue[] = [];
   for (let index = 0; index < node.args.length; index += 1) {
     const argPath = [...path, "args", index];
@@ -141,11 +143,11 @@ function evaluateExists<R extends JsonValue>(
 
 function evaluateBoolean<R extends JsonValue>(
   node: Extract<ValueExpression<R>, { kind: "op" }>,
-  operator: ExpressionOperator,
+  strategy: "and" | "or",
   path: ExpressionPath,
   state: EvaluationState<R>,
 ): Outcome {
-  const expected = operator.strategy === "and";
+  const expected = strategy === "and";
   for (let index = 0; index < node.args.length; index += 1) {
     const argPath = [...path, "args", index];
     const outcome = evaluateNode(node.args[index]!, argPath, state);
@@ -155,6 +157,19 @@ function evaluateBoolean<R extends JsonValue>(
     if (value !== expected) return { found: true, value: !expected };
   }
   return { found: true, value: expected };
+}
+
+function evaluateIf<R extends JsonValue>(
+  node: Extract<ValueExpression<R>, { kind: "op" }>,
+  path: ExpressionPath,
+  state: EvaluationState<R>,
+): Outcome {
+  const conditionPath = [...path, "args", 0];
+  const condition = evaluateNode(node.args[0]!, conditionPath, state);
+  if (!condition.found) return condition;
+  assertType(condition.value!, "boolean", conditionPath);
+  const selected = condition.value ? 1 : 2;
+  return evaluateNode(node.args[selected]!, [...path, "args", selected], state);
 }
 
 function evaluateCoalesce<R extends JsonValue>(

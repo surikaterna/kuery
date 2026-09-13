@@ -1,4 +1,4 @@
-import { arrayLength, cloneJson, dataProperties, stableJson, type ValidationState } from "./inspect.js";
+import { arrayLength, cloneJson, dataProperties, exceedsStringLimit, stableJson, type ValidationState } from "./inspect.js";
 import { resolveLimits } from "./limits.js";
 import { ExpressionFailure, failure, success } from "./result.js";
 import type {
@@ -114,21 +114,21 @@ function canonicalReference<R extends JsonValue>(
   const refPath = [...path, "ref"];
   const raw = properties.ref;
   const codec = state.options.reference;
-  if (!codec && typeof raw === "string" && raw.length > state.limits.maxReferenceLength) {
+  if (!codec && typeof raw === "string" && exceedsStringLimit(raw, state.limits.maxReferenceLength)) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
   }
   const cloned = cloneReference<R>(raw, refPath, depth + 1, state);
   if (codec ? !safeValidate(codec.validate, cloned) : !defaultReference(cloned)) {
     throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", refPath);
   }
-  if (referenceLength(cloned) > state.limits.maxReferenceLength) {
+  if (referenceExceedsLength(cloned, state.limits.maxReferenceLength)) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
   }
   if (!codec?.canonicalize) return Object.freeze({ kind: "ref", ref: cloned });
   const replacement = canonicalReferenceValue(cloned, codec.canonicalize, refPath);
   const output = cloneReference<R>(replacement, refPath, depth + 1, state);
   if (!safeValidate(codec.validate, output)) throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", refPath);
-  if (referenceLength(output) > state.limits.maxReferenceLength) {
+  if (referenceExceedsLength(output, state.limits.maxReferenceLength)) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
   }
   return Object.freeze({ kind: "ref", ref: output });
@@ -181,7 +181,7 @@ function canonicalOperator<R extends JsonValue>(
   if (typeof properties.op !== "string" || !Array.isArray(properties.args)) {
     throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
   }
-  if (properties.op.length === 0 || properties.op.length > state.limits.maxStringLength) {
+  if (properties.op.length === 0 || exceedsStringLimit(properties.op, state.limits.maxStringLength)) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", [...path, "op"]);
   }
   const args = canonicalArgs(properties.args, path, depth, state);
@@ -235,6 +235,8 @@ export function referenceIdentity(reference: JsonValue): string {
   return stableJson(reference);
 }
 
-function referenceLength(reference: JsonValue): number {
-  return typeof reference === "string" ? reference.length : stableJson(reference).length;
+function referenceExceedsLength(reference: JsonValue, maxLength: number): boolean {
+  return typeof reference === "string"
+    ? exceedsStringLimit(reference, maxLength)
+    : stableJson(reference).length > maxLength;
 }

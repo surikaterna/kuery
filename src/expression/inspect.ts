@@ -33,7 +33,7 @@ export function dataProperties(
       if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
         throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", [...path, key]);
       }
-      if (maxKeyLength !== undefined && key.length > maxKeyLength) {
+      if (maxKeyLength !== undefined && exceedsStringLimit(key, maxKeyLength)) {
         throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", [...path, key]);
       }
       if (UNSAFE_KEYS.has(key) || (allowed && !allowed.has(key))) {
@@ -80,8 +80,17 @@ function countValue(input: unknown, path: ExpressionPath, depth: number, state: 
 }
 
 function cloneString(input: string, path: ExpressionPath, maxLength: number): string {
-  if (input.length > maxLength) throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", path);
+  if (exceedsStringLimit(input, maxLength)) throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", path);
   return input;
+}
+
+export function exceedsStringLimit(input: string, maxLength: number): boolean {
+  let length = 0;
+  for (const _codePoint of input) {
+    length += 1;
+    if (length > maxLength) return true;
+  }
+  return false;
 }
 
 function cloneArray(input: unknown[], path: ExpressionPath, depth: number, state: ValidationState): JsonValue {

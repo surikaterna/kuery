@@ -688,6 +688,36 @@ describe("custom structurally immutable profiles", () => {
     }
   });
 
+  test("captures caller operator metadata and input types exactly once", () => {
+    const reads = Object.fromEntries(
+      ["name", "arity", "minArgs", "maxArgs", "inputTypes", "resultType", "execute"].map((key) => [key, 0]),
+    ) as Record<string, number>;
+    const sourceTypes = ["number"];
+    let elementReads = 0;
+    const proxiedTypes = new Proxy(sourceTypes, {
+      get(target, key, receiver) {
+        if (key === "0") elementReads += 1;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const definition = {
+      get name() { reads.name! += 1; return "app:once"; },
+      get arity() { reads.arity! += 1; return 1; },
+      get minArgs() { reads.minArgs! += 1; return undefined; },
+      get maxArgs() { reads.maxArgs! += 1; return undefined; },
+      get inputTypes() { reads.inputTypes! += 1; return reads.inputTypes === 1 ? proxiedTypes : ["invalid"]; },
+      get resultType() { reads.resultType! += 1; return reads.resultType === 1 ? "number" : "invalid"; },
+      get execute() { reads.execute! += 1; return ([value]: readonly JsonValue[]) => value!; },
+    };
+    const builder = new ExpressionProfileBuilder("app").add(definition as never);
+    sourceTypes[0] = "invalid";
+    const profile = builder.build();
+    expect(reads).toEqual({ name: 1, arity: 1, minArgs: 1, maxArgs: 1, inputTypes: 1, resultType: 1, execute: 1 });
+    expect(elementReads).toBe(1);
+    expect(profile.get("app:once")).toMatchObject({ inputTypes: ["number"], resultType: "number" });
+    expect(Object.isFrozen(profile.get("app:once")?.inputTypes)).toBe(true);
+  });
+
   test("contains throwing, asynchronous, and invalid custom operator results", () => {
     const profile = new ExpressionProfileBuilder("app")
       .add({ name: "app:throw", arity: 0, execute: () => { throw new Error("secret"); } })
@@ -758,6 +788,30 @@ describe("expression JSON Schema", () => {
     expect(validate({ kind: "literal", value: Number.POSITIVE_INFINITY })).toBe(false);
     expect(validate(op("and", ...Array.from({ length: 33 }, () => literal(true))))).toBe(false);
     expect(validate(literal({ ["x".repeat(10_001)]: true }))).toBe(false);
+  });
+
+  test("matches JSON Schema code-point length semantics for string values and property keys", () => {
+    const validate = compileSchema(getStandardExpressionJsonSchema());
+    const limit = 10_000;
+    const mixed = `${"😀".repeat(limit / 2)}${"a".repeat(limit / 2)}`;
+    const cases: readonly [string, string, boolean][] = [
+      ["BMP exact", "a".repeat(limit), true],
+      ["BMP over", "a".repeat(limit + 1), false],
+      ["astral exact", "😀".repeat(limit), true],
+      ["astral over", "😀".repeat(limit + 1), false],
+      ["mixed exact", mixed, true],
+      ["mixed over", `${mixed}a`, false],
+      ["unpaired surrogate exact", "\ud800".repeat(limit), true],
+      ["unpaired surrogate over", "\ud800".repeat(limit + 1), false],
+    ];
+    for (const [_name, value, expected] of cases) {
+      const valueExpression = literal(value);
+      const keyExpression = literal({ [value]: true });
+      expect(validate(valueExpression)).toBe(expected);
+      expect(canonicalizeExpression(valueExpression).ok).toBe(expected);
+      expect(validate(keyExpression)).toBe(expected);
+      expect(canonicalizeExpression(keyExpression).ok).toBe(expected);
+    }
   });
 
   test("leaves aggregate node and depth enforcement authoritative at runtime", () => {

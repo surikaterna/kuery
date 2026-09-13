@@ -10,7 +10,7 @@ Kuery v2 has a query frontend, an `ExprNode` query AST, a mutable `OperatorRegis
 
 ## Decision
 
-Kuery owns an additive expression core at `kuery/expression`. Its canonical `ValueExpression<R>` has literal, reference, and operator nodes. `R` is opaque JSON selected by the host. Unknown input is copied through own data descriptors into deeply frozen canonical JSON. Accessors, sparse arrays, executable/non-finite values, unsafe keys, cycles, non-plain objects, malformed nodes, and configured depth/node/argument/string bounds are rejected with fixed code-first diagnostics.
+Kuery owns an additive expression core at `kuery/expression`. Its canonical `ValueExpression<R>` has literal, reference, and operator nodes. `R` is opaque JSON selected by the host. Unknown input is copied through own data descriptors into deeply frozen canonical JSON. Accessors, sparse arrays, executable/non-finite values, unsafe keys, cycles, non-plain objects, malformed nodes, and configured depth/node/argument/string bounds are rejected with fixed code-first diagnostics. String and property-name bounds count Unicode code points, matching Draft 2020-12 `maxLength` semantics.
 
 The caller supplies a reference validator and optional canonicalizer for non-string reference forms. The default reference is a non-empty bounded string. Canonical JSON serialization supplies deterministic structural equality for stable first-seen dependency extraction.
 

@@ -25,6 +25,29 @@ const EXPRESSION_VALUE_TYPES = new Set<ExpressionValueType>([
 ]);
 const PROFILE_STATE = new WeakMap<ExpressionProfile, ReadonlyMap<string, ExpressionOperator>>();
 const OPERATOR_STRATEGIES = new WeakMap<ExpressionOperator, ExpressionEvaluationStrategy>();
+const INVALID_INPUT_TYPES = Symbol("invalid input types");
+
+interface DefinitionSnapshot {
+  readonly name: unknown;
+  readonly arity: unknown;
+  readonly minArgs: unknown;
+  readonly maxArgs: unknown;
+  readonly inputTypes: unknown;
+  readonly resultType: unknown;
+  readonly execute: unknown;
+  readonly strategy: unknown;
+}
+
+type ValidDefinitionSnapshot = DefinitionSnapshot & {
+  readonly name: string;
+  readonly arity: number | undefined;
+  readonly minArgs: number | undefined;
+  readonly maxArgs: number | undefined;
+  readonly inputTypes: readonly ExpressionValueType[] | undefined;
+  readonly resultType: ExpressionValueType | undefined;
+  readonly execute: ExpressionOperatorFn;
+  readonly strategy: ExpressionEvaluationStrategy | undefined;
+};
 /**
  * Structurally immutable snapshot of operator metadata and callback identities.
  * Callbacks are trusted host code; their closed-over or function-object state remains producer-owned.
@@ -46,9 +69,10 @@ export class ExpressionProfile {
     validateProfileName(name);
     const snapshot = new Map(profileOperators(this));
     for (const definition of operators) {
-      validateCustomDefinition(definition);
-      if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
-      snapshot.set(definition.name, freezeDefinition(definition));
+      const captured = captureDefinition(definition);
+      validateCustomDefinition(captured);
+      if (snapshot.has(captured.name)) throw new TypeError(`Duplicate expression operator: ${captured.name}`);
+      snapshot.set(captured.name, freezeDefinition(captured));
     }
     return createProfileSnapshot(name, snapshot);
   }
@@ -79,9 +103,10 @@ function addDefinitions(
   snapshot: Map<string, ExpressionOperator>,
 ): void {
   for (const definition of operators) {
-    validateDefinition(definition);
-    if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
-    snapshot.set(definition.name, freezeDefinition(definition));
+    const captured = captureDefinition(definition);
+    validateDefinition(captured);
+    if (snapshot.has(captured.name)) throw new TypeError(`Duplicate expression operator: ${captured.name}`);
+    snapshot.set(captured.name, freezeDefinition(captured));
   }
 }
 
@@ -100,48 +125,55 @@ function createProfileSnapshot(
 
 /** Mutable construction helper whose build result is an independent structural snapshot. */
 export class ExpressionProfileBuilder {
-  private readonly definitions = new Map<string, ExpressionOperatorDefinition>();
+  private readonly definitions = new Map<string, ValidDefinitionSnapshot>();
 
   constructor(private readonly name: string) {
     validateProfileName(name);
   }
 
   add(definition: ExpressionOperatorDefinition): this {
-    validateCustomDefinition(definition);
-    if (this.definitions.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
-    this.definitions.set(definition.name, definition);
+    const captured = captureDefinition(definition);
+    validateCustomDefinition(captured);
+    if (this.definitions.has(captured.name)) throw new TypeError(`Duplicate expression operator: ${captured.name}`);
+    this.definitions.set(captured.name, captured);
     return this;
   }
 
   build(): ExpressionProfile {
-    return new ExpressionProfile(this.name, this.definitions.values());
+    const operators = new Map<string, ExpressionOperator>();
+    for (const [name, definition] of this.definitions) operators.set(name, freezeDefinition(definition));
+    return createProfileSnapshot(this.name, operators);
   }
 }
 
-function validateDefinition(definition: ExpressionOperatorDefinition): void {
-  if (typeof definition?.name !== "string" || !OPERATOR_NAME.test(definition.name) || typeof definition.execute !== "function") {
+function validateDefinition(definition: DefinitionSnapshot): asserts definition is ValidDefinitionSnapshot {
+  if (typeof definition.name !== "string" || !OPERATOR_NAME.test(definition.name) || typeof definition.execute !== "function") {
     throw new TypeError("Expression operator name or implementation is invalid.");
   }
-  validateValueTypes(definition);
-  const hasExact = definition.arity !== undefined;
-  if (hasExact === (definition.minArgs !== undefined || definition.maxArgs !== undefined)) {
+  const inputTypes = validatedInputTypes(definition.inputTypes);
+  validateResultType(definition.resultType);
+  const arity = definition.arity;
+  const minArgs = definition.minArgs;
+  const maxArgs = definition.maxArgs;
+  const hasExact = arity !== undefined;
+  if (hasExact === (minArgs !== undefined || maxArgs !== undefined)) {
     throw new TypeError("Expression operators require exact arity or min/max arity.");
   }
-  if (hasExact) validateCount(definition.arity);
-  if (definition.minArgs !== undefined) validateCount(definition.minArgs);
-  if (definition.maxArgs !== undefined) validateCount(definition.maxArgs);
-  if ((definition.minArgs ?? 0) > (definition.maxArgs ?? Number.MAX_SAFE_INTEGER)) {
+  if (hasExact) validateCount(arity);
+  if (minArgs !== undefined) validateCount(minArgs);
+  if (maxArgs !== undefined) validateCount(maxArgs);
+  if ((minArgs ?? 0) > (maxArgs ?? Number.MAX_SAFE_INTEGER)) {
     throw new TypeError("Expression operator minimum arity exceeds maximum arity.");
   }
-  if (definition.inputTypes && hasExact && definition.inputTypes.length !== definition.arity) {
+  if (inputTypes && hasExact && inputTypes.length !== arity) {
     throw new TypeError("Expression operator input metadata must match exact arity.");
   }
-  if (definition.inputTypes && !hasExact && definition.inputTypes.length !== 1) {
+  if (inputTypes && !hasExact && inputTypes.length !== 1) {
     throw new TypeError("Variadic expression operators accept one repeated input type.");
   }
 }
 
-function validateCustomDefinition(definition: ExpressionOperatorDefinition): void {
+function validateCustomDefinition(definition: DefinitionSnapshot): asserts definition is ValidDefinitionSnapshot {
   validateDefinition(definition);
   if (typeof definition.name !== "string" || !NAMESPACED_OPERATOR_NAME.test(definition.name)) {
     throw new TypeError("Custom expression operators require a namespaced name.");
@@ -156,18 +188,20 @@ function validateLookupName(name: string): void {
   if (typeof name !== "string") throw new TypeError("Expression operator name must be a primitive string.");
 }
 
-function validateValueTypes(definition: ExpressionOperatorDefinition): void {
-  if (definition.inputTypes !== undefined) {
-    if (!validInputTypes(definition.inputTypes)) {
-      throw new TypeError("Expression operator input metadata is invalid.");
-    }
+function validatedInputTypes(input: unknown): readonly ExpressionValueType[] | undefined {
+  if (input !== undefined && !validInputTypes(input)) {
+    throw new TypeError("Expression operator input metadata is invalid.");
   }
-  if (definition.resultType !== undefined && !isExpressionValueType(definition.resultType)) {
+  return input;
+}
+
+function validateResultType(input: unknown): asserts input is ExpressionValueType | undefined {
+  if (input !== undefined && !isExpressionValueType(input)) {
     throw new TypeError("Expression operator result metadata is invalid.");
   }
 }
 
-function validInputTypes(input: readonly ExpressionValueType[]): boolean {
+function validInputTypes(input: unknown): input is readonly ExpressionValueType[] {
   if (!Array.isArray(input)) return false;
   for (let index = 0; index < input.length; index += 1) {
     if (!Object.hasOwn(input, index) || !isExpressionValueType(input[index])) return false;
@@ -179,26 +213,25 @@ function isExpressionValueType(value: unknown): value is ExpressionValueType {
   return typeof value === "string" && EXPRESSION_VALUE_TYPES.has(value as ExpressionValueType);
 }
 
-function validateCount(value: number | undefined): void {
-  if (!Number.isSafeInteger(value) || (value ?? -1) < 0 || (value ?? 0) > MAX_EXPRESSION_OPERATOR_ARGS) {
+function validateCount(value: unknown): asserts value is number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0 || (value as number) > MAX_EXPRESSION_OPERATOR_ARGS) {
     throw new TypeError("Expression operator arity is invalid.");
   }
 }
 
 function freezeDefinition(
-  definition: ExpressionOperatorDefinition,
-  strategy?: ExpressionEvaluationStrategy,
+  definition: ValidDefinitionSnapshot,
 ): ExpressionOperator {
   const operator = Object.freeze({
     name: definition.name,
     arity: definition.arity,
     minArgs: definition.minArgs,
     maxArgs: definition.maxArgs,
-    inputTypes: definition.inputTypes ? Object.freeze([...definition.inputTypes]) : undefined,
+    inputTypes: definition.inputTypes,
     resultType: definition.resultType,
     execute: definition.execute,
   });
-  if (strategy) OPERATOR_STRATEGIES.set(operator, strategy);
+  if (definition.strategy) OPERATOR_STRATEGIES.set(operator, definition.strategy);
   return operator;
 }
 
@@ -208,9 +241,10 @@ function createStandardProfile(
 ): ExpressionProfile {
   const snapshot = new Map<string, ExpressionOperator>();
   for (const definition of operators) {
-    validateDefinition(definition);
-    if (snapshot.has(definition.name)) throw new TypeError(`Duplicate expression operator: ${definition.name}`);
-    snapshot.set(definition.name, freezeDefinition(definition, definition.strategy));
+    const captured = captureDefinition(definition, true);
+    validateDefinition(captured);
+    if (snapshot.has(captured.name)) throw new TypeError(`Duplicate expression operator: ${captured.name}`);
+    snapshot.set(captured.name, freezeDefinition(captured));
   }
   return createProfileSnapshot(name, snapshot);
 }
@@ -220,3 +254,32 @@ function getEvaluationStrategy(operator: ExpressionOperator): ExpressionEvaluati
 }
 
 export const internalProfile = Object.freeze({ createStandardProfile, getEvaluationStrategy });
+
+function captureDefinition(definition: ExpressionOperatorDefinition, includeStrategy = false): DefinitionSnapshot {
+  const inputTypes = definition.inputTypes;
+  return Object.freeze({
+    name: definition.name,
+    arity: definition.arity,
+    minArgs: definition.minArgs,
+    maxArgs: definition.maxArgs,
+    inputTypes: captureInputTypes(inputTypes),
+    resultType: definition.resultType,
+    execute: definition.execute,
+    strategy: includeStrategy
+      ? (definition as ExpressionOperatorDefinition & { readonly strategy?: ExpressionEvaluationStrategy }).strategy
+      : undefined,
+  });
+}
+
+function captureInputTypes(input: unknown): unknown {
+  if (input === undefined || !Array.isArray(input)) return input;
+  try {
+    const length = input.length;
+    if (length > MAX_EXPRESSION_OPERATOR_ARGS) return INVALID_INPUT_TYPES;
+    const output: unknown[] = [];
+    for (let index = 0; index < length; index += 1) output.push(input[index]);
+    return Object.freeze(output);
+  } catch {
+    return INVALID_INPUT_TYPES;
+  }
+}

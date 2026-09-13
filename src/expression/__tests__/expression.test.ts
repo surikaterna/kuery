@@ -107,7 +107,26 @@ describe("strict expression canonicalization", () => {
       ok: false,
       diagnostic: { code: "EXPRESSION_LIMIT_EXCEEDED" },
     });
-    expect({ ownKeyReads, descriptorReads }).toEqual({ ownKeyReads: 0, descriptorReads: 0 });
+    expect({ ownKeyReads, descriptorReads }).toEqual({ ownKeyReads: 0, descriptorReads: 1 });
+  });
+
+  test.each(["literal", "operator"])("captures the %s array length without ordinary property reads", (kind) => {
+    let lengthReads = 0;
+    let lengthDescriptors = 0;
+    const values = kind === "literal" ? [true] : [literal(true)];
+    const array = new Proxy(values, {
+      get(target, key, receiver) {
+        if (key === "length") lengthReads += 1;
+        return Reflect.get(target, key, receiver);
+      },
+      getOwnPropertyDescriptor(target, key) {
+        if (key === "length") lengthDescriptors += 1;
+        return Reflect.getOwnPropertyDescriptor(target, key);
+      },
+    });
+    const input = kind === "literal" ? { kind: "literal", value: array } : { kind: "op", op: "and", args: array };
+    expect(canonicalizeExpression(input)).toMatchObject({ ok: true });
+    expect({ lengthReads, lengthDescriptors }).toEqual({ lengthReads: 0, lengthDescriptors: 1 });
   });
 
   test("enforces depth, node, argument, string, and default reference limits", () => {
@@ -132,6 +151,59 @@ describe("strict expression canonicalization", () => {
       },
     });
     expect(result).toEqual({ ok: true, value: { kind: "ref", ref: { id: "a" } } });
+  });
+
+  test("charges reference canonicalizer replacements to the shared node and depth limits", () => {
+    type AppRef = { readonly id?: string; readonly nested?: { readonly id: string } };
+    const reference = {
+      validate: (value: unknown): value is AppRef => typeof value === "object" && value !== null,
+      canonicalize: () => ({ nested: { id: "x" } }),
+    };
+    expect(canonicalizeExpression<AppRef>({ kind: "ref", ref: { id: "x" } }, {
+      reference,
+      limits: { maxNodes: 5 },
+    })).toMatchObject({ ok: false, diagnostic: { code: "EXPRESSION_LIMIT_EXCEEDED", path: ["ref", "nested"] } });
+    expect(canonicalizeExpression<AppRef>({ kind: "ref", ref: { id: "x" } }, {
+      reference,
+      limits: { maxDepth: 2 },
+    })).toMatchObject({ ok: false, diagnostic: { code: "EXPRESSION_LIMIT_EXCEEDED", path: ["ref", "nested", "id"] } });
+  });
+
+  test("clones and freezes canonicalizer output before validation", () => {
+    type AppRef = { readonly id: string };
+    const replacement = { id: "safe" };
+    const validated: AppRef[] = [];
+    const result = canonicalizeExpression<AppRef>({ kind: "ref", ref: { id: "raw" } }, {
+      reference: {
+        validate: (value): value is AppRef => {
+          if (typeof value !== "object" || value === null || !("id" in value)) return false;
+          validated.push(value as AppRef);
+          return Object.isFrozen(value);
+        },
+        canonicalize: () => replacement,
+      },
+    });
+    replacement.id = "mutated";
+    expect(result).toEqual({ ok: true, value: { kind: "ref", ref: { id: "safe" } } });
+    expect(validated).toHaveLength(2);
+    expect(validated.every(Object.isFrozen)).toBe(true);
+  });
+
+  test("limits object property key length at its precise path without invoking accessors", () => {
+    let invoked = false;
+    const value = Object.defineProperty({}, "long", {
+      enumerable: true,
+      get() { invoked = true; return 1; },
+    });
+    expect(canonicalizeExpression({ kind: "literal", value }, { limits: { maxStringLength: 3 } })).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_INVALID_INPUT", path: ["value", "long"] },
+    });
+    expect(invoked).toBe(false);
+    expect(canonicalizeExpression(literal({ long: 1 }), { limits: { maxStringLength: 3 } })).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_LIMIT_EXCEEDED", path: ["value", "long"] },
+    });
   });
 
   test("rejects invalid or throwing reference callbacks without leaking details", () => {
@@ -298,6 +370,16 @@ describe("compiled expression", () => {
     expect(compiled.ok && compiled.value.evaluate(() => ({ found: false, reason: "denied" }))).toMatchObject({
       ok: false,
       diagnostic: { code: "EXPRESSION_REFERENCE_DENIED", path: ["args", 0] },
+    });
+  });
+
+  test.each(["exists", "coalesce"])("preserves a multilevel denied path through %s", (outer) => {
+    const nested = op("add", literal(1), ref("denied"));
+    const expression = outer === "exists" ? op("exists", nested) : op("coalesce", nested, literal(7));
+    const compiled = compileExpression(expression, { profile: standardV1 });
+    expect(compiled.ok && compiled.value.evaluate(() => ({ found: false, reason: "denied" }))).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_REFERENCE_DENIED", path: ["args", 0, "args", 1] },
     });
   });
 
@@ -586,6 +668,26 @@ describe("custom structurally immutable profiles", () => {
     expect(() => builder.add({ name: "plain", arity: 0, execute: () => null })).toThrow(TypeError);
   });
 
+  test("rejects non-string names and invalid value-type metadata before use", () => {
+    const valid = { name: "app:value", arity: 0, execute: () => null };
+    for (const name of [new String("app"), Symbol("app")]) {
+      expect(() => new ExpressionProfile(name as never, [valid])).toThrow(TypeError);
+      expect(() => new ExpressionProfileBuilder(name as never)).toThrow(TypeError);
+      expect(() => new ExpressionProfile("app", [valid]).extend(name as never, [])).toThrow(TypeError);
+    }
+    const profile = new ExpressionProfile("app", [valid]);
+    expect(() => profile.get(Symbol("app:value") as never)).toThrow(TypeError);
+    expect(() => profile.has({ toString: () => "app:value" } as never)).toThrow(TypeError);
+    for (const metadata of [
+      { inputTypes: "number" },
+      { inputTypes: ["number", "invalid"] },
+      { inputTypes: Array(1) },
+      { resultType: "invalid" },
+    ]) {
+      expect(() => new ExpressionProfile("app", [{ ...valid, ...metadata } as never])).toThrow(TypeError);
+    }
+  });
+
   test("contains throwing, asynchronous, and invalid custom operator results", () => {
     const profile = new ExpressionProfileBuilder("app")
       .add({ name: "app:throw", arity: 0, execute: () => { throw new Error("secret"); } })
@@ -629,6 +731,7 @@ describe("expression JSON Schema", () => {
       "null", "boolean", "number", "string", "array", "object",
     ]);
     expect(Object.isFrozen(schema)).toBe(true);
+    expect(schema.$comment).toContain("aggregate maxNodes and maxDepth");
   });
 
   test("returns deeply frozen schemas without shared mutable state", () => {
@@ -654,6 +757,23 @@ describe("expression JSON Schema", () => {
     expect(validate({ kind: "ref", ref: "x", extra: true })).toBe(false);
     expect(validate({ kind: "literal", value: Number.POSITIVE_INFINITY })).toBe(false);
     expect(validate(op("and", ...Array.from({ length: 33 }, () => literal(true))))).toBe(false);
+    expect(validate(literal({ ["x".repeat(10_001)]: true }))).toBe(false);
+  });
+
+  test("leaves aggregate node and depth enforcement authoritative at runtime", () => {
+    const schema = generateExpressionJsonSchema(new ExpressionProfile("literal-only", []));
+    const validate = compileSchema(schema);
+    const value = { left: [1, 2], right: [3, 4] };
+    const expression = literal(value);
+    expect(validate(expression)).toBe(true);
+    expect(canonicalizeExpression(expression, { limits: { maxNodes: 5 } })).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_LIMIT_EXCEEDED" },
+    });
+    expect(canonicalizeExpression(literal([[[true]]]), { limits: { maxDepth: 2 } })).toMatchObject({
+      ok: false,
+      diagnostic: { code: "EXPRESSION_LIMIT_EXCEEDED" },
+    });
   });
 
   test("includes only supplied custom profile operators and their arity", () => {

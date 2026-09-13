@@ -15,7 +15,12 @@ const jsonValueSchema = deepFreeze({
     {
       type: "object",
       maxProperties: DEFAULT_EXPRESSION_LIMITS.maxNodes,
-      propertyNames: { not: { enum: ["__proto__", "constructor", "prototype"] } },
+      propertyNames: {
+        allOf: [
+          { maxLength: DEFAULT_EXPRESSION_LIMITS.maxStringLength },
+          { not: { enum: ["__proto__", "constructor", "prototype"] } },
+        ],
+      },
       additionalProperties: { $ref: "#/$defs/jsonValue" },
     },
   ],
@@ -28,6 +33,7 @@ export function generateExpressionJsonSchema(profile: ExpressionProfile): Expres
   return deepFreeze({
     $schema: "https://json-schema.org/draft/2020-12/schema",
     $id: `https://kuery.dev/schema/expression/${encodeURIComponent(profile.name)}`,
+    $comment: "This schema enforces recursive shape and profile constraints only; aggregate maxNodes and maxDepth limits are runtime-authoritative during canonicalization and compilation.",
     $ref: "#/$defs/expression",
     $defs: {
       jsonValue: jsonValueSchema,

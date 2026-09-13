@@ -20,6 +20,9 @@ export interface ExpressionOperator extends ExpressionOperatorDefinition {}
 const OPERATOR_NAME = /^[a-z][a-z0-9-]*(?:[.:/][a-z][a-z0-9-]*)*$/;
 const NAMESPACED_OPERATOR_NAME = /^[a-z][a-z0-9-]*[.:/][a-z][a-z0-9-]*(?:[.:/][a-z][a-z0-9-]*)*$/;
 const PROFILE_NAME = /^[A-Za-z][A-Za-z0-9._:/@-]{0,127}$/;
+const EXPRESSION_VALUE_TYPES = new Set<ExpressionValueType>([
+  "any", "null", "boolean", "number", "string", "array", "object",
+]);
 const PROFILE_STATE = new WeakMap<ExpressionProfile, ReadonlyMap<string, ExpressionOperator>>();
 const OPERATOR_STRATEGIES = new WeakMap<ExpressionOperator, ExpressionEvaluationStrategy>();
 /**
@@ -40,6 +43,7 @@ export class ExpressionProfile {
 
   /** Derive a new immutable profile while preserving this profile's evaluation semantics. */
   extend(name: string, operators: Iterable<ExpressionOperatorDefinition>): ExpressionProfile {
+    validateProfileName(name);
     const snapshot = new Map(profileOperators(this));
     for (const definition of operators) {
       validateCustomDefinition(definition);
@@ -50,10 +54,12 @@ export class ExpressionProfile {
   }
 
   get(name: string): ExpressionOperator | undefined {
+    validateLookupName(name);
     return profileOperators(this).get(name);
   }
 
   has(name: string): boolean {
+    validateLookupName(name);
     return profileOperators(this).has(name);
   }
 
@@ -113,9 +119,10 @@ export class ExpressionProfileBuilder {
 }
 
 function validateDefinition(definition: ExpressionOperatorDefinition): void {
-  if (!OPERATOR_NAME.test(definition.name) || typeof definition.execute !== "function") {
+  if (typeof definition?.name !== "string" || !OPERATOR_NAME.test(definition.name) || typeof definition.execute !== "function") {
     throw new TypeError("Expression operator name or implementation is invalid.");
   }
+  validateValueTypes(definition);
   const hasExact = definition.arity !== undefined;
   if (hasExact === (definition.minArgs !== undefined || definition.maxArgs !== undefined)) {
     throw new TypeError("Expression operators require exact arity or min/max arity.");
@@ -136,13 +143,40 @@ function validateDefinition(definition: ExpressionOperatorDefinition): void {
 
 function validateCustomDefinition(definition: ExpressionOperatorDefinition): void {
   validateDefinition(definition);
-  if (!NAMESPACED_OPERATOR_NAME.test(definition.name)) {
+  if (typeof definition.name !== "string" || !NAMESPACED_OPERATOR_NAME.test(definition.name)) {
     throw new TypeError("Custom expression operators require a namespaced name.");
   }
 }
 
 function validateProfileName(name: string): void {
-  if (!PROFILE_NAME.test(name)) throw new TypeError("Expression profile name is invalid.");
+  if (typeof name !== "string" || !PROFILE_NAME.test(name)) throw new TypeError("Expression profile name is invalid.");
+}
+
+function validateLookupName(name: string): void {
+  if (typeof name !== "string") throw new TypeError("Expression operator name must be a primitive string.");
+}
+
+function validateValueTypes(definition: ExpressionOperatorDefinition): void {
+  if (definition.inputTypes !== undefined) {
+    if (!validInputTypes(definition.inputTypes)) {
+      throw new TypeError("Expression operator input metadata is invalid.");
+    }
+  }
+  if (definition.resultType !== undefined && !isExpressionValueType(definition.resultType)) {
+    throw new TypeError("Expression operator result metadata is invalid.");
+  }
+}
+
+function validInputTypes(input: readonly ExpressionValueType[]): boolean {
+  if (!Array.isArray(input)) return false;
+  for (let index = 0; index < input.length; index += 1) {
+    if (!Object.hasOwn(input, index) || !isExpressionValueType(input[index])) return false;
+  }
+  return true;
+}
+
+function isExpressionValueType(value: unknown): value is ExpressionValueType {
+  return typeof value === "string" && EXPRESSION_VALUE_TYPES.has(value as ExpressionValueType);
 }
 
 function validateCount(value: number | undefined): void {

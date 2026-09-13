@@ -137,7 +137,7 @@ function evaluateExists<R extends JsonValue>(
   state: EvaluationState<R>,
 ): Outcome {
   const outcome = evaluateNode(argument, path, state);
-  if (outcome.denied) throw new ExpressionFailure("EXPRESSION_REFERENCE_DENIED", path);
+  if (outcome.denied) throw new ExpressionFailure("EXPRESSION_REFERENCE_DENIED", outcome.path ?? path);
   return { found: true, value: outcome.found };
 }
 
@@ -180,7 +180,7 @@ function evaluateCoalesce<R extends JsonValue>(
   for (let index = 0; index < node.args.length; index += 1) {
     const argPath = [...path, "args", index];
     const outcome = evaluateNode(node.args[index]!, argPath, state);
-    if (outcome.denied) throw new ExpressionFailure("EXPRESSION_REFERENCE_DENIED", argPath);
+    if (outcome.denied) throw new ExpressionFailure("EXPRESSION_REFERENCE_DENIED", outcome.path ?? argPath);
     if (outcome.found && outcome.value !== null) return outcome;
   }
   return { found: true, value: null };

@@ -16,6 +16,7 @@ export function dataProperties(
   path: ExpressionPath,
   allowed?: ReadonlySet<string>,
   maxProperties?: number,
+  maxKeyLength?: number,
 ): Readonly<Record<string, unknown>> {
   if (!isPlainObject(input)) throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
   try {
@@ -25,11 +26,17 @@ export function dataProperties(
     }
     const output: Record<string, unknown> = {};
     for (const key of keys) {
-      if (typeof key !== "string" || UNSAFE_KEYS.has(key) || (allowed && !allowed.has(key))) {
+      if (typeof key !== "string") {
         throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", [...path, String(key)]);
       }
       const descriptor = Object.getOwnPropertyDescriptor(input, key);
       if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
+        throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", [...path, key]);
+      }
+      if (maxKeyLength !== undefined && key.length > maxKeyLength) {
+        throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", [...path, key]);
+      }
+      if (UNSAFE_KEYS.has(key) || (allowed && !allowed.has(key))) {
         throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", [...path, key]);
       }
       Object.defineProperty(output, key, { value: descriptor.value, enumerable: true, writable: true });
@@ -80,15 +87,16 @@ function cloneString(input: string, path: ExpressionPath, maxLength: number): st
 function cloneArray(input: unknown[], path: ExpressionPath, depth: number, state: ValidationState): JsonValue {
   enter(input, path, state);
   try {
-    if (input.length > state.maxNodes - state.nodes) {
+    const length = arrayLength(input, path);
+    if (length > state.maxNodes - state.nodes) {
       throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", path);
     }
     const keys = Reflect.ownKeys(input);
-    if (keys.some((key) => typeof key === "symbol" || (key !== "length" && !isArrayIndex(key, input.length)))) {
+    if (keys.some((key) => typeof key === "symbol" || (key !== "length" && !isArrayIndex(key, length)))) {
       throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
     }
     const values: JsonValue[] = [];
-    for (let index = 0; index < input.length; index += 1) {
+    for (let index = 0; index < length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(input, String(index));
       if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
         throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", [...path, index]);
@@ -107,7 +115,7 @@ function cloneArray(input: unknown[], path: ExpressionPath, depth: number, state
 function cloneObject(input: object, path: ExpressionPath, depth: number, state: ValidationState): JsonObject {
   enter(input, path, state);
   try {
-    const properties = dataProperties(input, path, undefined, state.maxNodes - state.nodes);
+    const properties = dataProperties(input, path, undefined, state.maxNodes - state.nodes, state.maxStringLength);
     const output: Record<string, JsonValue> = {};
     for (const key of Object.keys(properties).sort()) {
       Object.defineProperty(output, key, {
@@ -118,6 +126,19 @@ function cloneObject(input: object, path: ExpressionPath, depth: number, state: 
     return Object.freeze(output);
   } finally {
     state.active.delete(input);
+  }
+}
+
+export function arrayLength(input: unknown[], path: ExpressionPath): number {
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(input, "length");
+    if (!descriptor || !("value" in descriptor) || !Number.isSafeInteger(descriptor.value) || descriptor.value < 0 || descriptor.value > 0xffff_ffff) {
+      throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
+    }
+    return descriptor.value as number;
+  } catch (error) {
+    if (error instanceof ExpressionFailure) throw error;
+    throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
   }
 }
 

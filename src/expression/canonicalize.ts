@@ -1,4 +1,4 @@
-import { cloneJson, dataProperties, stableJson, type ValidationState } from "./inspect.js";
+import { arrayLength, cloneJson, dataProperties, stableJson, type ValidationState } from "./inspect.js";
 import { resolveLimits } from "./limits.js";
 import { ExpressionFailure, failure, success } from "./result.js";
 import type {
@@ -68,7 +68,7 @@ function canonicalizeNode<R extends JsonValue>(
     }
     const properties = selectNodeProperties(initial, path, NODE_KEYS[kind]);
     if (kind === "literal") return canonicalLiteral(properties, path, depth, state);
-    if (kind === "ref") return canonicalReference(properties, path, state);
+    if (kind === "ref") return canonicalReference(properties, path, depth, state);
     return canonicalOperator(properties, path, depth, state);
   } finally {
     state.active.delete(input);
@@ -107,6 +107,7 @@ function canonicalLiteral<R extends JsonValue>(
 function canonicalReference<R extends JsonValue>(
   properties: Readonly<Record<string, unknown>>,
   path: ExpressionPath,
+  depth: number,
   state: CanonicalState<R>,
 ): ValueExpression<R> {
   if (!("ref" in properties)) throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", [...path, "ref"]);
@@ -116,7 +117,7 @@ function canonicalReference<R extends JsonValue>(
   if (!codec && typeof raw === "string" && raw.length > state.limits.maxReferenceLength) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
   }
-  const cloned = cloneReference<R>(raw, refPath, state);
+  const cloned = cloneReference<R>(raw, refPath, depth + 1, state);
   if (codec ? !safeValidate(codec.validate, cloned) : !defaultReference(cloned)) {
     throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", refPath);
   }
@@ -124,32 +125,23 @@ function canonicalReference<R extends JsonValue>(
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
   }
   if (!codec?.canonicalize) return Object.freeze({ kind: "ref", ref: cloned });
-  const canonical = canonicalReferenceValue(cloned, codec.canonicalize, refPath);
-  if (codec && !safeValidate(codec.validate, canonical)) {
-    throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", refPath);
-  }
-  let output: R;
-  try {
-    output = cloneJson(canonical, refPath, 1, {
-      maxDepth: state.limits.maxDepth,
-      maxNodes: state.limits.maxNodes,
-      maxStringLength: state.limits.maxStringLength,
-      nodes: 0,
-      active: new WeakSet(),
-    }) as R;
-    if (referenceLength(output) > state.limits.maxReferenceLength) {
-      throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
-    }
-  } catch (error) {
-    if (error instanceof ExpressionFailure) throw error;
-    throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", refPath);
+  const replacement = canonicalReferenceValue(cloned, codec.canonicalize, refPath);
+  const output = cloneReference<R>(replacement, refPath, depth + 1, state);
+  if (!safeValidate(codec.validate, output)) throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", refPath);
+  if (referenceLength(output) > state.limits.maxReferenceLength) {
+    throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", refPath);
   }
   return Object.freeze({ kind: "ref", ref: output });
 }
 
-function cloneReference<R extends JsonValue>(input: unknown, path: ExpressionPath, state: CanonicalState<R>): R {
+function cloneReference<R extends JsonValue>(
+  input: unknown,
+  path: ExpressionPath,
+  depth: number,
+  state: CanonicalState<R>,
+): R {
   try {
-    return cloneJson(input, path, 1, state) as R;
+    return cloneJson(input, path, depth, state) as R;
   } catch (error) {
     if (error instanceof ExpressionFailure && error.code === "EXPRESSION_LIMIT_EXCEEDED") throw error;
     throw new ExpressionFailure("EXPRESSION_INVALID_REFERENCE", path);
@@ -192,9 +184,6 @@ function canonicalOperator<R extends JsonValue>(
   if (properties.op.length === 0 || properties.op.length > state.limits.maxStringLength) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", [...path, "op"]);
   }
-  if (properties.args.length > state.limits.maxArgs) {
-    throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", [...path, "args"]);
-  }
   const args = canonicalArgs(properties.args, path, depth, state);
   return Object.freeze({ kind: "op", op: properties.op, args });
 }
@@ -206,22 +195,23 @@ function canonicalArgs<R extends JsonValue>(
   state: CanonicalState<R>,
 ): readonly ValueExpression<R>[] {
   const argsPath = [...path, "args"];
-  if (input.length > state.maxNodes - state.nodes) {
+  const length = arrayLength(input, argsPath);
+  if (length > state.limits.maxArgs || length > state.maxNodes - state.nodes) {
     throw new ExpressionFailure("EXPRESSION_LIMIT_EXCEEDED", argsPath);
   }
-  validateArrayKeys(input, argsPath);
+  validateArrayKeys(input, argsPath, length);
   const output: ValueExpression<R>[] = [];
-  for (let index = 0; index < input.length; index += 1) {
+  for (let index = 0; index < length; index += 1) {
     const descriptor = arrayElement(input, index, argsPath);
     output.push(canonicalizeNode(descriptor.value, [...argsPath, index], depth + 1, state));
   }
   return Object.freeze(output);
 }
 
-function validateArrayKeys(input: unknown[], path: ExpressionPath): void {
+function validateArrayKeys(input: unknown[], path: ExpressionPath, length: number): void {
   try {
     const keys = Reflect.ownKeys(input);
-    if (keys.length !== input.length + 1) throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
+    if (keys.length !== length + 1) throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);
   } catch (error) {
     if (error instanceof ExpressionFailure) throw error;
     throw new ExpressionFailure("EXPRESSION_INVALID_INPUT", path);

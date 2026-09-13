@@ -16,7 +16,8 @@ export default defineConfig({
   },
   format: ["esm", "cjs"],
   dts: true,
-  splitting: false,
+  // Shared chunks preserve profile identity and private WeakMap state across package entry points.
+  splitting: true,
   clean: true,
   sourcemap: true,
   cjsInterop: true,

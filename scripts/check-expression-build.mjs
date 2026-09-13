@@ -10,6 +10,16 @@ const rootCjs = require("kuery");
 assert.equal(typeof rootEsm.compileExpression, "function");
 assert.equal(typeof rootCjs.compileExpression, "function");
 
+for (const [root, subpath] of [[rootEsm, esm], [rootCjs, cjs]]) {
+  assert.equal(root.ExpressionProfile, subpath.ExpressionProfile);
+  assert.equal(root.standardV1, subpath.standardV1);
+  for (const [compiler, profileApi] of [[root, subpath], [subpath, root]]) {
+    const compiled = compiler.compileExpression({ kind: "literal", value: true }, { profile: profileApi.standardV1 });
+    assert.deepEqual(compiled.ok && compiled.value.evaluate(() => ({ found: false })), { ok: true, value: true });
+    assert.equal(compiler.generateExpressionJsonSchema(profileApi.standardV1).$id, "https://kuery.dev/schema/expression/standard-v1");
+  }
+}
+
 for (const api of [esm, cjs]) {
   assert.equal(typeof api.compileExpression, "function");
   assert.equal(typeof api.generateExpressionJsonSchema, "function");

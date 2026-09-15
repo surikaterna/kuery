@@ -1,0 +1,102 @@
+name: Release/Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_version:
+        description: Package version expected in package.json
+        required: true
+        default: 2.1.0
+        type: string
+
+concurrency:
+  group: release-publish-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  publish:
+    if: github.repository == 'surikaterna/kuery'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Prepare npm trusted publishing runtime
+        run: |
+          npm install --global npm@11.5.1
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Clean build
+        run: |
+          rm -rf dist
+          npm run build
+
+      - name: Smoke test expression build and types
+        run: |
+          npm run test:expression-build
+          npm run test:expression-types
+
+      - name: Verify package and version
+        env:
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+        run: |
+          node <<'NODE'
+          const manifest = require("./package.json");
+          const expectedVersion = process.env.EXPECTED_VERSION;
+
+          if (manifest.name !== "kuery") {
+            throw new Error(`Expected package name kuery, received ${manifest.name}`);
+          }
+          if (manifest.version !== expectedVersion) {
+            throw new Error(`Expected version ${expectedVersion}, received ${manifest.version}`);
+          }
+          NODE
+
+      - name: Verify version is not published
+        env:
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+        run: |
+          if registry_output="$(npm view "kuery@${EXPECTED_VERSION}" version --json 2>&1)"; then
+            printf '%s\n' "kuery@${EXPECTED_VERSION} is already published (${registry_output})" >&2
+            exit 1
+          fi
+
+          case "${registry_output}" in
+            *E404*) printf '%s\n' "kuery@${EXPECTED_VERSION} is available to publish" ;;
+            *) printf '%s\n' "Registry lookup failed: ${registry_output}" >&2; exit 1 ;;
+          esac
+
+      - name: Inspect package contents
+        run: npm pack --dry-run --json
+
+      - name: Publish to npm via trusted publishing
+        run: npm publish --access public --provenance --tag latest

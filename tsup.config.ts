@@ -12,10 +12,12 @@ export default defineConfig({
     ast: "src/ast.ts",
     errors: "src/errors.ts",
     "safe-path": "src/safe-path.ts",
+    expression: "src/expression/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,
-  splitting: false,
+  // Shared chunks preserve profile identity and private WeakMap state across package entry points.
+  splitting: true,
   clean: true,
   sourcemap: true,
   cjsInterop: true,

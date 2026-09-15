@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-09-15
+
 ### Added
 
 - Additive strict expression core through `kuery/expression` and selected root exports: bounded JSON `ValueExpression<R>` canonicalization, structurally immutable profiles and `standard-v1`, profile-aware strict JSON Schema generation, whole-AST compilation, deterministic dependency extraction, generic reference resolution, and stable diagnostics. Operator callbacks are trusted producer-owned code whose closed-over state cannot be frozen; ordinary native Promise results are consumed, while producers retain ownership of suspicious thenables, species behavior, altered Promise shapes, and pre-existing rejections Kuery cannot safely consume.

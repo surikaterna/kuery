@@ -1,6 +1,6 @@
 {
   "name": "kuery",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "MongoDB-style in-memory query engine — TypeScript, ESM+CJS",
   "type": "module",
   "main": "./dist/index.cjs",

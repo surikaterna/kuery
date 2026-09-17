@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Replace Kuery's duplicate strict-expression implementation with identity-preserving re-exports from `@kalada/core/kuery-v1`; the existing root and `kuery/expression` APIs remain compatible.
+
 ## [2.1.0] — 2026-09-15
 
 ### Added

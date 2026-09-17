@@ -1,10 +1,10 @@
 # Kuery
 
-> MongoDB-style in-memory query engine — zero dependencies, TypeScript, ESM+CJS
+> MongoDB-style in-memory query engine — TypeScript, ESM+CJS
 
 ## Purpose
 
-Kuery is a zero-dependency query engine for filtering in-memory JavaScript collections using MongoDB-compatible query syntax. It compiles queries to optimized native closures, supports full TypeScript with type-safe dot-path queries, and ships dual ESM+CJS.
+Kuery filters in-memory JavaScript collections using MongoDB-compatible query syntax. It compiles queries to optimized native closures, supports full TypeScript with type-safe dot-path queries, and ships dual ESM+CJS.
 
 ## Installation
 
@@ -189,7 +189,7 @@ Pre-compiling filters is recommended for hot paths (event handlers, stream proce
 
 ### Strict generic expressions
 
-The additive `kuery/expression` entry is independent of the Mongo-style query API. It validates an entire JSON AST, snapshots structurally immutable operator definitions and lookup, extracts opaque dependencies, and evaluates through a host resolver:
+The additive `kuery/expression` entry directly re-exports `@kalada/core/kuery-v1`, preserving binding identity while remaining independent of the Mongo-style query API. It validates an entire JSON AST, snapshots structurally immutable operator definitions and lookup, extracts opaque dependencies, and evaluates through a host resolver:
 
 ```typescript
 import { compileExpression, standardV1, type ValueExpression } from 'kuery/expression';

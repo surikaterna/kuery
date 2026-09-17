@@ -1,7 +1,8 @@
 # ADR 0001: Standard expression core
 
-- Status: Accepted
+- Status: Superseded by Kuery #39
 - Date: 2026-09-11
+- Superseded: 2026-09-17
 - Issue: Kuery #33
 
 ## Context
@@ -10,7 +11,9 @@ Kuery v2 has a query frontend, an `ExprNode` query AST, a mutable `OperatorRegis
 
 ## Decision
 
-Kuery owns an additive expression core at `kuery/expression`. Its canonical `ValueExpression<R>` has literal, reference, and operator nodes. `R` is opaque JSON selected by the host. Unknown input is copied through own data descriptors into deeply frozen canonical JSON. Accessors, sparse arrays, executable/non-finite values, unsafe keys, cycles, non-plain objects, malformed nodes, and configured depth/node/argument/string bounds are rejected with fixed code-first diagnostics. String and property-name bounds count Unicode code points, matching Draft 2020-12 `maxLength` semantics.
+As of Kuery 2.1's next patch, Kalada owns this implementation. Kuery preserves the API described below as an identity-preserving compatibility facade over `@kalada/core/kuery-v1`.
+
+The additive expression API at `kuery/expression` has a canonical `ValueExpression<R>` with literal, reference, and operator nodes. `R` is opaque JSON selected by the host. Unknown input is copied through own data descriptors into deeply frozen canonical JSON. Accessors, sparse arrays, executable/non-finite values, unsafe keys, cycles, non-plain objects, malformed nodes, and configured depth/node/argument/string bounds are rejected with fixed code-first diagnostics. String and property-name bounds count Unicode code points, matching Draft 2020-12 `maxLength` semantics.
 
 The caller supplies a reference validator and optional canonicalizer for non-string reference forms. The default reference is a non-empty bounded string. Canonical JSON serialization supplies deterministic structural equality for stable first-seen dependency extraction.
 
@@ -32,7 +35,7 @@ Evaluation uses a bounded step count. Resolver and operator values are copied th
 
 This API is additive. Existing `ExprNode`, `compile`, `evaluate`, `compileFilter`, path behavior, and `OperatorRegistry` remain unchanged. The existing filter compiler's global wiring and circular initialization are not reused.
 
-The expression core owns the AST boundary, profiles, compilation, diagnostics, dependencies, and generic resolver protocol. The Mongo-inspired query frontend remains a separate adapter and is not a compatibility promise for this expression language. Formbar owns namespaces, authorization, capabilities, observations, and lifecycle. Arbitre owns rule scheduling and truth maintenance. Neither product concept belongs in Kuery's expression core.
+Kalada owns the expression AST boundary, profiles, compilation, diagnostics, dependencies, and generic resolver protocol. Kuery owns only the compatibility exports and its Mongo-inspired query frontend. Formbar owns namespaces, authorization, capabilities, observations, and lifecycle. Arbitre owns rule scheduling and truth maintenance. Neither product concept belongs in Kuery's expression facade.
 
 ## Consequences and extraction triggers
 

@@ -58,7 +58,7 @@ export {
   getStandardExpressionJsonSchema,
   MAX_EXPRESSION_OPERATOR_ARGS,
   standardV1,
-} from "./expression/index.js";
+} from "@kalada/core/kuery-v1";
 export type {
   CanonicalizeExpressionOptions,
   CompiledExpression,
@@ -74,4 +74,4 @@ export type {
   ReferenceResolver,
   Result,
   ValueExpression,
-} from "./expression/index.js";
+} from "@kalada/core/kuery-v1";

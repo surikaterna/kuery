@@ -1,66 +1,61 @@
 {
   "name": "kuery",
   "version": "2.1.0",
-  "description": "MongoDB-style in-memory query engine — zero dependencies, TypeScript, ESM+CJS",
+  "description": "MongoDB-style in-memory query engine — TypeScript, ESM+CJS",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./collection": {
-      "types": "./dist/collection.d.ts",
-      "import": "./dist/collection.js",
-      "require": "./dist/collection.cjs"
+      "import": { "types": "./dist/collection.d.ts", "default": "./dist/collection.js" },
+      "require": { "types": "./dist/collection.d.cts", "default": "./dist/collection.cjs" }
     },
     "./filter": {
-      "types": "./dist/filter.d.ts",
-      "import": "./dist/filter.js",
-      "require": "./dist/filter.cjs"
+      "import": { "types": "./dist/filter.d.ts", "default": "./dist/filter.js" },
+      "require": { "types": "./dist/filter.d.cts", "default": "./dist/filter.cjs" }
     },
     "./compile": {
-      "types": "./dist/compile.d.ts",
-      "import": "./dist/compile.js",
-      "require": "./dist/compile.cjs"
+      "import": { "types": "./dist/compile.d.ts", "default": "./dist/compile.js" },
+      "require": { "types": "./dist/compile.d.cts", "default": "./dist/compile.cjs" }
     },
     "./evaluate": {
-      "types": "./dist/evaluate.d.ts",
-      "import": "./dist/evaluate.js",
-      "require": "./dist/evaluate.cjs"
+      "import": { "types": "./dist/evaluate.d.ts", "default": "./dist/evaluate.js" },
+      "require": { "types": "./dist/evaluate.d.cts", "default": "./dist/evaluate.cjs" }
     },
     "./trace": {
-      "types": "./dist/trace.d.ts",
-      "import": "./dist/trace.js",
-      "require": "./dist/trace.cjs"
+      "import": { "types": "./dist/trace.d.ts", "default": "./dist/trace.js" },
+      "require": { "types": "./dist/trace.d.cts", "default": "./dist/trace.cjs" }
     },
     "./operators": {
-      "types": "./dist/operators.d.ts",
-      "import": "./dist/operators.js",
-      "require": "./dist/operators.cjs"
+      "import": { "types": "./dist/operators.d.ts", "default": "./dist/operators.js" },
+      "require": { "types": "./dist/operators.d.cts", "default": "./dist/operators.cjs" }
     },
     "./ast": {
-      "types": "./dist/ast.d.ts",
-      "import": "./dist/ast.js",
-      "require": "./dist/ast.cjs"
+      "import": { "types": "./dist/ast.d.ts", "default": "./dist/ast.js" },
+      "require": { "types": "./dist/ast.d.cts", "default": "./dist/ast.cjs" }
     },
     "./errors": {
-      "types": "./dist/errors.d.ts",
-      "import": "./dist/errors.js",
-      "require": "./dist/errors.cjs"
+      "import": { "types": "./dist/errors.d.ts", "default": "./dist/errors.js" },
+      "require": { "types": "./dist/errors.d.cts", "default": "./dist/errors.cjs" }
     },
     "./safe-path": {
-      "types": "./dist/safe-path.d.ts",
-      "import": "./dist/safe-path.js",
-      "require": "./dist/safe-path.cjs"
+      "import": { "types": "./dist/safe-path.d.ts", "default": "./dist/safe-path.js" },
+      "require": { "types": "./dist/safe-path.d.cts", "default": "./dist/safe-path.cjs" }
     },
     "./expression": {
-      "types": "./dist/expression.d.ts",
-      "import": "./dist/expression.js",
-      "require": "./dist/expression.cjs"
+      "import": { "types": "./dist/expression.d.ts", "default": "./dist/expression.js" },
+      "require": { "types": "./dist/expression.d.cts", "default": "./dist/expression.cjs" }
     }
   },
   "files": ["dist", "docs/adr/0001-standard-expression-core.md"],
@@ -85,5 +80,8 @@
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@kalada/core": "^0.1.0"
   }
 }

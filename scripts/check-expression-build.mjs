@@ -3,16 +3,35 @@ import { createRequire } from "node:module";
 
 const esm = await import("kuery/expression");
 const rootEsm = await import("kuery");
+const kaladaEsm = await import("@kalada/core/kuery-v1");
 const require = createRequire(import.meta.url);
 const cjs = require("kuery/expression");
 const rootCjs = require("kuery");
+const kaladaCjs = require("@kalada/core/kuery-v1");
 
 assert.equal(typeof rootEsm.compileExpression, "function");
 assert.equal(typeof rootCjs.compileExpression, "function");
 
-for (const [root, subpath] of [[rootEsm, esm], [rootCjs, cjs]]) {
-  assert.equal(root.ExpressionProfile, subpath.ExpressionProfile);
-  assert.equal(root.standardV1, subpath.standardV1);
+const runtimeExports = [
+  "canonicalizeExpression",
+  "compileExpression",
+  "extractExpressionDependencies",
+  "DEFAULT_EXPRESSION_LIMITS",
+  "generateExpressionJsonSchema",
+  "getStandardExpressionJsonSchema",
+  "ExpressionProfile",
+  "ExpressionProfileBuilder",
+  "MAX_EXPRESSION_OPERATOR_ARGS",
+  "standardV1",
+];
+
+for (const [root, subpath, kalada] of [[rootEsm, esm, kaladaEsm], [rootCjs, cjs, kaladaCjs]]) {
+  for (const name of runtimeExports) {
+    assert.equal(subpath[name], kalada[name], `kuery/expression ${name} identity`);
+  }
+  for (const name of runtimeExports) {
+    assert.equal(root[name], kalada[name], `kuery root ${name} identity`);
+  }
   for (const [compiler, profileApi] of [[root, subpath], [subpath, root]]) {
     const compiled = compiler.compileExpression({ kind: "literal", value: true }, { profile: profileApi.standardV1 });
     assert.deepEqual(compiled.ok && compiled.value.evaluate(() => ({ found: false })), { ok: true, value: true });

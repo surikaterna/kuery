@@ -16,7 +16,8 @@ export default defineConfig({
   },
   format: ["esm", "cjs"],
   dts: true,
-  // Shared chunks preserve profile identity and private WeakMap state across package entry points.
+  // Consumers must resolve one physical Kalada implementation through this runtime dependency.
+  external: ["@kalada/core"],
   splitting: true,
   clean: true,
   sourcemap: true,

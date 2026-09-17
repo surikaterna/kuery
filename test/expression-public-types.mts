@@ -8,6 +8,27 @@ import {
   standardV1,
   type ValueExpression,
 } from "kuery/expression";
+import {
+  compileExpression as rootCompileExpression,
+  ExpressionProfile as RootExpressionProfile,
+  ExpressionProfileBuilder as RootExpressionProfileBuilder,
+  standardV1 as rootStandardV1,
+  type ValueExpression as RootValueExpression,
+} from "kuery";
+import {
+  compileExpression as kaladaCompileExpression,
+  ExpressionProfile as KaladaExpressionProfile,
+  ExpressionProfileBuilder as KaladaExpressionProfileBuilder,
+  standardV1 as kaladaStandardV1,
+  type ValueExpression as KaladaValueExpression,
+} from "@kalada/core/kuery-v1";
+
+const compilerIdentity: typeof kaladaCompileExpression = compileExpression;
+const rootCompilerIdentity: typeof kaladaCompileExpression = rootCompileExpression;
+const profileIdentity: typeof KaladaExpressionProfile = RootExpressionProfile;
+const builderIdentity: typeof KaladaExpressionProfileBuilder = RootExpressionProfileBuilder;
+const standardIdentity: typeof kaladaStandardV1 = rootStandardV1;
+void [compilerIdentity, rootCompilerIdentity, profileIdentity, builderIdentity, standardIdentity];
 
 type AppReference = { readonly namespace: string; readonly segments: readonly (string | number)[] };
 
@@ -15,6 +36,9 @@ const expression: ValueExpression<AppReference> = {
   kind: "ref",
   ref: { namespace: "data", segments: ["customer", 0, "name"] },
 };
+const kaladaExpression: KaladaValueExpression<AppReference> = expression;
+const rootExpression: RootValueExpression<AppReference> = kaladaExpression;
+void rootExpression;
 
 const codec: ReferenceCodec<AppReference> = {
   validate: (input): input is AppReference => typeof input === "object" && input !== null,
